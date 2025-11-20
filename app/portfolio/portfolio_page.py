@@ -194,6 +194,10 @@ def run_portfolio_page():
         asset_returns = compute_simple_returns(prices)
     else:
         asset_returns = compute_log_returns(prices)
+        
+    # FIX: ensure DataFrame even with 1 asset
+    if isinstance(asset_returns, pd.Series):
+        asset_returns = asset_returns.to_frame()
 
     if asset_returns.empty:
         st.warning("Not enough data to compute returns.")
