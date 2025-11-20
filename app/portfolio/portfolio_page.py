@@ -1,6 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+#---------------------------
+
+#I got an issue with the importation with streamlit so i
+# add the project root directory to PYTHONPATH.
+# Because streamlit executes scripts from a temporary working directory,
+# which prevents relative imports such as `from app.portfolio ...`
+# from working correctly when running pages directly.
+
+# So, by dynamically adding the project root to sys.path, i ensure
+# that the `app` package can always be imported, both when:
+# - running this page directly with `streamlit run`,
+# - running the full dashboard through the global main.py.
+
+import sys
+import os
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(ROOT_DIR)
+
+#---------------------------
+
 import datetime as dt
 
 import streamlit as st
