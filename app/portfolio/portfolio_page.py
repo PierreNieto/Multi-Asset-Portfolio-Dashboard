@@ -169,8 +169,16 @@ def run_portfolio_page():
     # Alternative softer :
     prices = prices.ffill().bfill()   # full alignment by filling gaps
 
+    # Remove assets with insufficient data (prevents Plotly crash)
+    prices = prices.loc[:, prices.notna().sum() > 10]
 
-    # Resample if needed
+    if prices.shape[1] == 0:
+        st.error("No assets have enough data to display. Try another date range.")
+        return
+
+
+
+    # Maybe resample if needed..?
     freq_code = _map_freq_label_to_code(freq_label)
     if freq_code != "D":
         prices = resample_price_data(prices, freq=freq_code, how="last")
