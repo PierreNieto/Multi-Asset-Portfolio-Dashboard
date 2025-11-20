@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Thu Nov 20 21:16:02 2025
+
+@author: nieto
+"""
 
 import pandas as pd
 import numpy as np
@@ -38,7 +43,7 @@ def resample_price_data(price_df: pd.DataFrame,
     return resampled.dropna()
 
 
-    
+
 
 # Rolling volatility
 def rolling_volatility(returns: pd.DataFrame,
