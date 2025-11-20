@@ -163,6 +163,13 @@ def run_portfolio_page():
 
     prices = clean_price_data(prices)
 
+    # Test : Align all asset series on the same index
+    # Hard version, big loss of data :
+    # prices = prices.dropna(how="any")  # strict align to common dates
+    # Alternative softer :
+    prices = prices.ffill().bfill()   # full alignment by filling gaps
+
+
     # Resample if needed
     freq_code = _map_freq_label_to_code(freq_label)
     if freq_code != "D":
@@ -194,7 +201,7 @@ def run_portfolio_page():
         asset_returns = compute_simple_returns(prices)
     else:
         asset_returns = compute_log_returns(prices)
-        
+
     # FIX: ensure DataFrame even with 1 asset
     if isinstance(asset_returns, pd.Series):
         asset_returns = asset_returns.to_frame()
