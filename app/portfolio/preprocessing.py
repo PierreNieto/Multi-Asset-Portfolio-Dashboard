@@ -4,19 +4,19 @@
 import pandas as pd
 import numpy as np
 
-# Block 1 — Simple returns
+# Simple returns
 def compute_simple_returns(price_df: pd.DataFrame) -> pd.DataFrame:
     """Compute daily simple percentage returns."""
     return price_df.pct_change().dropna()
 
 
-# Block 2 — Log returns
+# Log returns
 def compute_log_returns(price_df: pd.DataFrame) -> pd.DataFrame:
     """Compute daily log returns: log(Pt / Pt-1)."""
     return np.log(price_df / price_df.shift(1)).dropna()
 
 
-# Block 2 — Resampling utilities (weekly, monthly…)
+# Resampling utilities (weekly, monthly…)
 def resample_price_data(price_df: pd.DataFrame,
                         freq: str = "M",
                         how: str = "last") -> pd.DataFrame:
@@ -34,3 +34,24 @@ def resample_price_data(price_df: pd.DataFrame,
     else:
         raise ValueError("Unsupported aggregation method.")
     return resampled.dropna()
+
+# Rolling volatility
+def rolling_volatility(returns: pd.DataFrame,
+                       window: int = 20) -> pd.DataFrame:
+    """Compute rolling volatility over a given window."""
+    return returns.rolling(window).std()
+
+
+# Rolling mean (moving average)
+def rolling_mean(price_df: pd.DataFrame,
+                 window: int = 20) -> pd.DataFrame:
+    """Compute rolling mean of price series."""
+    return price_df.rolling(window).mean()
+
+
+# Rolling correlation between two assets
+def rolling_correlation(series1: pd.Series,
+                        series2: pd.Series,
+                        window: int = 20) -> pd.Series:
+    """Compute rolling correlation between two price/return series."""
+    return series1.rolling(window).corr(series2)
