@@ -162,20 +162,27 @@ def run_portfolio_page():
         return
 
     prices = clean_price_data(prices)
+    
+     # reindex on full index then fill gaps
+    full_index = prices.index
+    prices = prices.reindex(full_index)
+    prices = prices.ffill().bfill()
 
+#-------------------
     # Test : Align all asset series on the same index
+
     # Hard version, big loss of data :
     # prices = prices.dropna(how="any")  # strict align to common dates
     # Alternative softer :
-    prices = prices.ffill().bfill()   # full alignment by filling gaps
+    #prices = prices.ffill().bfill()   # full alignment by filling gaps
 
     # Remove assets with insufficient data (prevents Plotly crash)
-    prices = prices.loc[:, prices.notna().sum() > 10]
+    #prices = prices.loc[:, prices.notna().sum() > 10]
 
-    if prices.shape[1] == 0:
-        st.error("No assets have enough data to display. Try another date range.")
-        return
-
+    #if prices.shape[1] == 0:
+        #st.error("No assets have enough data to display. Try another date range.")
+        #return
+#-------------------
 
 
     # Maybe resample if needed..?
