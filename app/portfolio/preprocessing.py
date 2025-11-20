@@ -10,6 +10,8 @@ def compute_simple_returns(price_df: pd.DataFrame) -> pd.DataFrame:
     return price_df.pct_change().dropna()
 
 
+
+
 # Log returns
 def compute_log_returns(price_df: pd.DataFrame) -> pd.DataFrame:
     """Compute daily log returns: log(Pt / Pt-1)."""
@@ -35,6 +37,9 @@ def resample_price_data(price_df: pd.DataFrame,
         raise ValueError("Unsupported aggregation method.")
     return resampled.dropna()
 
+
+    
+
 # Rolling volatility
 def rolling_volatility(returns: pd.DataFrame,
                        window: int = 20) -> pd.DataFrame:
@@ -55,3 +60,48 @@ def rolling_correlation(series1: pd.Series,
                         window: int = 20) -> pd.Series:
     """Compute rolling correlation between two price/return series."""
     return series1.rolling(window).corr(series2)
+
+
+
+
+# — Basic cleaning utilities
+def clean_price_data(price_df: pd.DataFrame) -> pd.DataFrame:
+    """Sort index, drop duplicates and rows with all-NaN values."""
+    df = price_df.copy()
+    df = df.sort_index()
+    df = df[~df.index.duplicated(keep="last")]
+    return df.dropna(how="all")
+
+
+def fill_missing_values(df: pd.DataFrame,
+                        method: str = "ffill") -> pd.DataFrame:
+    """Fill missing values (default: forward fill, then backfill)."""
+    if method == "ffill":
+        df = df.ffill().bfill()
+    elif method == "bfill":
+        df = df.bfill().ffill()
+    else:
+        raise ValueError("Unsupported fill method.")
+    return df
+
+
+def align_dataframes(dfs: list[pd.DataFrame],
+                     how: str = "inner") -> list[pd.DataFrame]:
+    """
+    Align multiple DataFrames on the same date index.
+
+    Example:
+        prices_aligned, macro_aligned = align_dataframes([prices, macro])
+    """
+    if not dfs:
+        return dfs
+    common_index = dfs[0].index
+    for df in dfs[1:]:
+        if how == "inner":
+            common_index = common_index.intersection(df.index)
+        elif how == "outer":
+            common_index = common_index.union(df.index)
+        else:
+            raise ValueError("Unsupported align method.")
+    aligned = [df.reindex(common_index) for df in dfs]
+    return aligned
