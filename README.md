@@ -1,146 +1,109 @@
 MULTI-ASSET PORTFOLIO DASHBOARD  
-Projet ESILV — Python, Git & Linux for Finance  
-(Module complet : Single Asset + Multi-Asset)
+ESILV Project — Python, Git & Linux for Finance  
+(Full project: Single Asset + Multi-Asset)
 
-Ce projet a été réalisé dans le cadre du cours Python, Git & Linux for Finance.
-L’objectif est de développer une plateforme financière interactive capable de :
+This project was developed as part of the Python, Git & Linux for Finance course.
+The objective is to build an interactive financial platform capable of:
 
-- récupérer des données financières en temps réel
-- afficher des dashboards interactifs
-- exécuter des stratégies quantitatives
-- simuler un portefeuille multi-actifs
-- produire des rapports journaliers automatisés
-- fonctionner 24/7 sur une machine Linux distante
+- retrieving real-time financial data
+- displaying interactive dashboards
+- running quantitative trading strategies
+- simulating a multi-asset portfolio
+- generating automated daily reports
+- running 24/7 on a Linux virtual machine
 
-Le projet est développé en binôme avec deux modules distincts :
+The project is carried out in pairs, with two distinct modules:
 - Quant A — Single Asset Analysis
 - Quant B — Multi-Asset Portfolio Analysis
 
-Les deux modules sont intégrés dans une seule application Streamlit.
+Both modules are integrated into a single Streamlit application.
 
 --------------------------------------------------------------------
 
-1) SINGLE ASSET ANALYSIS MODULE (Quant A)
-Dossier : /app/single_asset/
+1) SINGLE ASSET ANALYSIS MODULE (Quant A)  
+Folder: /app/single_asset/
 
-Fonctionnalités :
-- Analyse d’un actif unique (AAPL, CAC40, EUR/USD…)
-- Récupération dynamique des prix (API, yfinance, web scraping)
-- Backtesting de deux stratégies minimum
-- Calculs : Sharpe ratio, Max Drawdown, Volatilité, Performance cumulée
-- Graphiques interactifs : prix de l’actif + stratégie
-- Paramètres ajustables dans l’interface
-- Bonus : modèle prédictif (ARIMA, Régression, ML)
+Features:
+- Analysis of a single asset (AAPL, CAC40, EUR/USD…)
+- Dynamic price retrieval (API, yfinance, web scraping)
+- Backtesting of at least two strategies
+- Metrics: Sharpe ratio, Max Drawdown, Annualized Volatility, Cumulative Returns
+- Interactive charts: asset price + strategy performance
+- Adjustable parameters in the UI
+- Bonus: predictive model (ARIMA, Regression, ML)
 
 --------------------------------------------------------------------
 
-2) MULTI-ASSET PORTFOLIO MODULE (Quant B)
-Dossier : /app/portfolio/
+2) MULTI-ASSET PORTFOLIO MODULE (Quant B)  
+Folder: /app/portfolio/
 
-Fonctionnalités :
-- Chargement multi-actifs (minimum 3 actifs) via yfinance ou API
-- Calcul des rendements journaliers
-- Construction de portefeuilles :
+Features:
+- Multi-asset data loading (at least 3 assets) via yfinance or API
+- Daily returns calculation
+- Portfolio construction:
   * Equal-weight
-  * Pondérations personnalisées
-  * Rebalancement simple
-- Mesures de performance :
-  * Rendement cumulé
-  * Volatilité annualisée
+  * Custom weights
+  * Simple rebalancing
+- Performance metrics:
+  * Cumulative return
+  * Annualized volatility
   * Sharpe ratio
-  * Matrice de corrélation
-- Visualisations interactives :
-  * Prix de chaque actif
-  * Valeur cumulée du portefeuille
-  * Comparaison actifs vs portefeuille
-  * Graphiques interactifs Plotly
+  * Correlation matrix
+- Interactive visualizations:
+  * Individual asset prices
+  * Portfolio cumulative value
+  * Asset vs. portfolio comparison
+  * Plotly interactive charts
 
 --------------------------------------------------------------------
 
-APPLICATION STREAMLIT
+STREAMLIT APPLICATION
 
-La plateforme finale comporte :
-- Un menu latéral
-- Une page Single Asset
-- Une page Multi-Asset Portfolio
-- Une mise à jour automatique des données toutes les 5 minutes
-- Une gestion robuste des erreurs API
+The final dashboard includes:
+- A sidebar navigation menu
+- A Single Asset page
+- A Multi-Asset Portfolio page
+- Automatic data refresh every 5 minutes
+- Robust error handling for API failures
 
-Exécution locale :
+Local execution:
 streamlit run app/main.py
 
 --------------------------------------------------------------------
 
-DEPLOIEMENT LINUX & CRON
+LINUX DEPLOYMENT & CRON AUTOMATION
 
-Le projet doit être déployé sur une machine Linux avec :
-- Application Streamlit active 24/7
-- Mise à jour automatique des données
-- Rapport quotidien (généré via cron à 20h00)
-- Rapports stockés dans /reports/
-- Script cron inclus dans le dépôt
-
---------------------------------------------------------------------
-
-STRUCTURE DU DÉPÔT
-
-Multi-Asset-Portfolio-Dashboard/
-│
-├── app/
-│   ├── main.py
-│   ├── single_asset/
-│   └── portfolio/
-│         ├── data_loader.py
-│         ├── portfolio_calc.py
-│         ├── strategies.py
-│         ├── plots.py
-│         ├── page_portfolio.py
-│
-├── cron/
-├── reports/
-├── requirements.txt
-└── README.txt
+The project must be deployed on a Linux machine with:
+- A Streamlit app running 24/7
+- Automatic data updates
+- A daily report (generated via cron at 20:00)
+- Reports stored in /reports/
+- Cron script included in the repository
 
 --------------------------------------------------------------------
 
-TECHNOLOGIES UTILISÉES
+TECHNOLOGIES USED
 
-- Python 3.9
-- Streamlit
-- Pandas / NumPy
-- Plotly
-- SciPy
-- yfinance
-- Git / GitHub
+- Python 3.9  
+- Streamlit  
+- Pandas / NumPy  
+- Plotly  
+- SciPy  
+- yfinance  
+- Git / GitHub  
 - Linux (VM, cron)
 
 --------------------------------------------------------------------
 
-WORKFLOW GIT (BINÔME)
-
-Branches :
-main
-single_asset
-portfolio
-
-Procédure :
-1. Chaque membre travaille sur sa branche dédiée
-2. Commits propres et réguliers
-3. Pull Request vers main
-4. Review + merge
-5. Intégration finale et déploiement
-
---------------------------------------------------------------------
-
-AUTEURS
+AUTHORS
 
 Lou-anne Peillon — Single Asset Module (Quant A)
 Pierre Nieto — Multi-Asset Portfolio Module (Quant B)
 
 --------------------------------------------------------------------
 
-OBJECTIF FINAL
+FINAL OBJECTIVE
 
-Une application financière interactive, robuste, professionnelle, déployée
-sur Linux et fonctionnant 24/7, permettant d’analyser un actif unique ainsi
-qu’un portefeuille multi-actifs complet.
+A robust, professional, interactive financial application deployed on Linux
+and running 24/7, capable of analyzing both a single asset and a complete
+multi-asset portfolio.
