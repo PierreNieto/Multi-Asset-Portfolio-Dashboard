@@ -1,0 +1,37 @@
+README – Multi-Asset Portfolio Module (Quant B)
+
+Objective of the Portfolio:
+The goal of this multi-asset portfolio is to analyze the correlation between macroeconomic risk and financial markets. The selected assets allow the study of:
+
+* The relationship between interest rates, inflation, commodities, and equities
+* The dynamics between risky assets (stocks, crypto) and safe-haven assets (gold)
+* Diversification across US and European markets
+* The impact of energy prices (Brent) on financial markets
+* Portfolio effects such as volatility, correlation, and cumulative performance
+
+Selected Assets and Justification:
+
+AAPL – Apple (US Tech)
+Represents the US technology sector. Highly sensitive to interest rate movements, making it ideal for studying rate–equity interactions and the behavior of growth stocks under macroeconomic stress.
+
+SPY – S&P 500 ETF
+The benchmark index for the US stock market. Provides a broad representation of market risk and is essential for comparing asset behavior, understanding global equity sentiment, and observing systemic risk.
+
+ACA.PA – Crédit Agricole (Europe Finance)
+A major European bank. Banks are strongly influenced by interest rates, credit conditions, and economic cycles. This asset helps analyze European financial risk and compare EU vs US market behavior.
+
+AIR.PA – Airbus (Europe Industrial)
+A cyclical industrial company. Highly sensitive to global demand, economic conditions, and energy prices. Useful for comparing industrial cyclicality with technology and financial sectors.
+
+BZ=F – Brent Crude Oil
+The global benchmark for oil prices. Important for understanding inflation pressures, energy shocks, and their effects on both equities and interest rates.
+
+^TNX – US 10Y Bond Yield
+The most monitored global macroeconomic indicator. Represents risk-free rates, monetary policy expectations, and inflation expectations. Critical for analyzing interest-rate-driven movements across all asset classes.
+
+GC=F – Gold
+A traditional safe-haven asset. Typically negatively correlated with equities during stress periods. Useful for identifying hedging behavior and studying risk-off market regimes.
+
+BTC-USD – Bitcoin
+A non-traditional digital asset. Sometimes correlated with equities, sometimes fully decorrelated. Adds an alternative asset class and provides insight into speculative risk and modern portfolio diversification.
+
