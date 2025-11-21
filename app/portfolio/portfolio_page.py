@@ -136,7 +136,7 @@ def run_portfolio_page():
     custom_weights = None
     if strategy == "Custom weights" and selected_tickers:
         st.sidebar.markdown("#### Custom weights")
-        custom_weights = []
+        raw_weights = []
         for ticker in selected_tickers:
             w = st.sidebar.slider(
                 f"Weight for {ticker}",
@@ -145,7 +145,17 @@ def run_portfolio_page():
                 value=1.0 / len(selected_tickers),
                 step=0.01,
             )
-            custom_weights.append(w)
+            raw_weights.append(w)
+
+    # Normalize weights so sum = 1
+    total = sum(raw_weights)
+    if total > 0:
+        custom_weights = [w / total for w in raw_weights]
+    else:
+        custom_weights = [1 / len(raw_weights)] * len(raw_weights)
+
+    st.sidebar.write(f"**Normalized weights:** {custom_weights}")
+
 
     st.sidebar.markdown("### Rolling metrics")
     rolling_window = st.sidebar.slider(
