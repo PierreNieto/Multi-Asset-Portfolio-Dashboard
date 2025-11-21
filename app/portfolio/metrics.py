@@ -61,3 +61,9 @@ def diversification_ratio(returns: pd.DataFrame,
     portfolio_vol = np.sqrt(w.T @ cov.values @ w)
     weighted_stds = (w * stds).sum()
     return weighted_stds / portfolio_vol
+
+def rolling_beta(portfolio_returns, benchmark_returns, window=60):
+    cov = portfolio_returns.rolling(window).cov(benchmark_returns)
+    var = benchmark_returns.rolling(window).var()
+    beta = cov / var
+    return beta

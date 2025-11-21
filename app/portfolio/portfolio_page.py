@@ -138,6 +138,13 @@ def run_portfolio_page():
         step=5,
     )
 
+    st.sidebar.subheader("Benchmark Selection")
+    benchmark = st.sidebar.selectbox(
+        "Benchmark (for Rolling Beta)",
+        ["SPY", "QQQ", "^FCHI", "^GSPC", "Custom…"],
+        index=0
+    )
+    
     # -----------------------------
     # Basic validations
     # -----------------------------
