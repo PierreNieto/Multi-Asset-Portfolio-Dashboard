@@ -285,19 +285,19 @@ def run_portfolio_page():
     )
     st.dataframe(metrics_df.style.format("{:.4f}"))
 
-    # -----------------------------
-    # Charts
-    # -----------------------------
-    st.markdown("### Price and portfolio charts")
+# -----------------------------
+# TABS: Overview / Risk / Performance / Macro
+# -----------------------------
+overview_tab, risk_tab, perf_tab, macro_tab = st.tabs(
+    ["Overview", "Risk Analysis", "Performance", "Macro Dashboard"]
+)
 
-    # Ensure prices is always a DataFrame
-    if isinstance(prices, pd.Series):
-        prices = prices.to_frame()
+# -----------------------------
+# OVERVIEW TAB
+# -----------------------------
+with overview_tab:
 
-    # Align all columns on the full index and fill missing values
-    prices = prices.reindex(prices.index)
-    prices = prices.ffill().bfill()
-
+    st.subheader("Price and Portfolio Overview")
 
     price_fig = plot_price_series(prices)
     st.plotly_chart(price_fig, use_container_width=True)
@@ -305,16 +305,50 @@ def run_portfolio_page():
     port_cum_fig = plot_cumulative_returns(port_cum)
     st.plotly_chart(port_cum_fig, use_container_width=True)
 
-    st.markdown("### Correlation matrix")
+# -----------------------------
+# RISK ANALYSIS TAB
+# -----------------------------
+with risk_tab:
+
+    st.subheader("Correlation Matrix")
     corr_fig = plot_correlation_heatmap(corr_mat)
     st.plotly_chart(corr_fig, use_container_width=True)
 
-    # Rolling volatility
-    st.markdown("### Rolling volatility")
+    st.subheader("Rolling Volatility")
     roll_vol = rolling_volatility(asset_returns, window=rolling_window)
     if not roll_vol.empty:
         roll_vol_fig = plot_rolling_volatility(roll_vol)
         st.plotly_chart(roll_vol_fig, use_container_width=True)
+
+# -----------------------------
+# PERFORMANCE TAB
+# -----------------------------
+with perf_tab:
+
+    st.subheader("Asset-level metrics")
+
+    metrics_df = pd.DataFrame(
+        {
+            "Annualized return": asset_ann_ret,
+            "Annualized volatility": asset_ann_vol,
+            "Sharpe ratio": asset_sharpe,
+        }
+    )
+    st.dataframe(metrics_df.style.format("{:.4f}"), use_container_width=True)
+
+# -----------------------------
+# MACRO TAB
+# -----------------------------
+with macro_tab:
+
+    st.subheader("Macro Indicators")
+
+    if not macro_data_aligned:
+        st.info("No macro data available for the selected start date.")
+    else:
+        for name, df in macro_data_aligned.items():
+            st.write(f"### {name}")
+            st.line_chart(df, height=200, use_container_width=True)
 
     # -----------------------------
     # Macro section
