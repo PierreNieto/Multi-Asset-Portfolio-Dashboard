@@ -81,6 +81,37 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
     return _format_xaxis(fig)
 
 
+
+DATE_FORMAT = "%d %b %Y"  # si tu l'as déjà, garde-le
+
+def _format_xaxis(fig):
+    fig.update_xaxes(
+        tickformat=DATE_FORMAT,
+        ticks="outside",
+        ticklabelmode="period",
+    )
+    return fig
+
+# --- NOUVELLE FONCTION ---
+
+def plot_normalized_series(price_df: pd.DataFrame,
+                           title: str = "Normalized Performance (base = 100)") -> go.Figure:
+    """
+    Plot normalized price series (base 100) to compare assets.
+
+    - On prend le 1er point de chaque série comme base 100.
+    - Utile pour comparer des actifs très différents (BTC, actions, taux, etc.).
+    """
+    df_norm = price_df / price_df.iloc[0] * 100.0
+
+    fig = px.line(df_norm, title=title)
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Performance Index (base = 100)",
+        legend_title="Assets",
+    )
+    return _format_xaxis(fig)
+
 # =====================================================
 # CUMULATIVE RETURNS (unit: base 1.0)
 # =====================================================

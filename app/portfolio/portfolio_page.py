@@ -59,7 +59,8 @@ from app.portfolio.plots import (
     plot_rolling_volatility,
     plot_rolling_beta,       
     plot_drawdown,            
-    plot_efficient_frontier, 
+    plot_efficient_frontier,
+    plot_normalized_series, 
 )
 from app.portfolio.macro_loader import load_macro_data
 
@@ -86,6 +87,32 @@ def _compute_rolling_beta(
     beta = cov / var
     return beta
 
+# -----------------------------
+# Helper: thematic normalized panels
+# -----------------------------
+def _plot_thematic_panel(prices: pd.DataFrame,
+                         requested_tickers: list[str],
+                         title: str):
+    """
+    Affiche un graphique normalisé (base 100) pour un sous-groupe d'actifs.
+
+    - On ne garde que les tickers présents dans prices.columns.
+    - Si < 2 actifs dispos -> message d’info.
+    """
+    available = [t for t in requested_tickers if t in prices.columns]
+    if len(available) < 2:
+        st.info(
+            "Not enough of the requested assets are present in your current selection. "
+            "Add them in the sidebar asset list to see this panel."
+        )
+        return
+
+    sub_prices = prices[available]
+    fig = plot_normalized_series(
+        sub_prices,
+        title=f"{title} (base = 100)",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 def run_portfolio_page():
     st.title("Multi-Asset Portfolio Dashboard")
@@ -385,11 +412,69 @@ def run_portfolio_page():
         # -----------------------------
         with overview_tab:
             st.subheader("Price and Portfolio Overview")
-            price_fig = plot_price_series(prices)
+            price_fig = plot_normalized_series(
+                prices,
+                title="Global Performance Index (base = 100)",
+            )
             st.plotly_chart(price_fig, use_container_width=True)
 
             port_cum_fig = plot_cumulative_returns(port_cum)
             st.plotly_chart(port_cum_fig, use_container_width=True)
+
+                st.markdown("### Thematic comparison panels")
+
+        panel = st.selectbox(
+            "Select a comparison universe",
+            [
+                "Crypto / Gold / SP500 / Nvidia",
+                "Sovereign bonds (10Y yields)",
+                "Top 3 by region (US / CAC40 / Euronext / China)",
+                "Top 15 global market cap",
+            ],
+            index=0,
+        )
+
+        if panel == "Crypto / Gold / SP500 / Nvidia":
+            _plot_thematic_panel(
+                prices,
+                ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"],
+                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia",
+            )
+
+        elif panel == "Sovereign bonds (10Y yields)":
+            _plot_thematic_panel(
+                prices,
+                ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"],
+                title="10Y Government Yields (US, France, Italy, Greece, Brazil)",
+            )
+
+        elif panel == "Top 3 by region (US / CAC40 / Euronext / China)":
+            _plot_thematic_panel(
+                prices,
+                [
+                    # US
+                    "AAPL", "MSFT", "NVDA",
+                    # CAC40
+                    "MC.PA", "OR.PA", "TTE.PA",
+                    # Euronext large caps
+                    "ASML.AS", "ADYEN.AS", "SAN.PA",
+                    # China / HK
+                    "0700.HK", "9988.HK", "600519.SS",
+                ],
+                title="Top 3 per region — US / CAC40 / Euronext / China",
+            )
+
+        elif panel == "Top 15 global market cap":
+            _plot_thematic_panel(
+                prices,
+                [
+                    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
+                    "META", "TSM", "LLY", "JPM", "V",
+                    "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
+                ],
+                title="Top 15 companies worldwide (by market cap, approx.)",
+            )
+
 
         # -----------------------------
         # RISK ANALYSIS TAB (Standard)
@@ -494,11 +579,68 @@ def run_portfolio_page():
         # -----------------------------
         with pro_overview_tab:
             st.subheader("Price and Portfolio Overview (Pro)")
-            price_fig = plot_price_series(prices)
+            price_fig = plot_normalized_series(
+            prices,
+            title="Global Performance Index (base = 100)",
+            )
             st.plotly_chart(price_fig, use_container_width=True)
 
             port_cum_fig = plot_cumulative_returns(port_cum)
             st.plotly_chart(port_cum_fig, use_container_width=True)
+
+                st.markdown("### Thematic comparison panels")
+
+        panel = st.selectbox(
+            "Select a comparison universe",
+            [
+                "Crypto / Gold / SP500 / Nvidia",
+                "Sovereign bonds (10Y yields)",
+                "Top 3 by region (US / CAC40 / Euronext / China)",
+                "Top 15 global market cap",
+            ],
+            index=0,
+        )
+
+        if panel == "Crypto / Gold / SP500 / Nvidia":
+            _plot_thematic_panel(
+                prices,
+                ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"],
+                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia",
+            )
+
+        elif panel == "Sovereign bonds (10Y yields)":
+            _plot_thematic_panel(
+                prices,
+                ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"],
+                title="10Y Government Yields (US, France, Italy, Greece, Brazil)",
+            )
+
+        elif panel == "Top 3 by region (US / CAC40 / Euronext / China)":
+            _plot_thematic_panel(
+                prices,
+                [
+                    # US
+                    "AAPL", "MSFT", "NVDA",
+                    # CAC40
+                    "MC.PA", "OR.PA", "TTE.PA",
+                    # Euronext large caps
+                    "ASML.AS", "ADYEN.AS", "SAN.PA",
+                    # China / HK
+                    "0700.HK", "9988.HK", "600519.SS",
+                ],
+                title="Top 3 per region — US / CAC40 / Euronext / China",
+            )
+
+        elif panel == "Top 15 global market cap":
+            _plot_thematic_panel(
+                prices,
+                [
+                    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
+                    "META", "TSM", "LLY", "JPM", "V",
+                    "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
+                ],
+                title="Top 15 companies worldwide (by market cap, approx.)",
+            )
 
         # -----------------------------
         # RISK TAB (Pro)
