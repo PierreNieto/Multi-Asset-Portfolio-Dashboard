@@ -5,50 +5,39 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
-DATE_FORMAT = "%d %b %Y"   # Uniform day + month + year for all charts
+# Unified date format for the whole dashboard
+DATE_FORMAT = "%d %b %Y"  
 
-
-# =====================================================
-# BASIC PLOTS
-# =====================================================
-
-def _format_xaxis(fig):
-    """Utility: unify date formatting across all charts."""
-    fig.update_xaxes(
-        dtick="M1",
-        tickformat=DATE_FORMAT
-    )
-    return fig
-
-
-# -----------------------------
-# Multi-asset price chart
-# -----------------------------
-
-def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
-    """
-    Plot multi-asset price series with correct currency/tooltips.
-    """
-
-    # Define units per asset
+# Mapping of units for each asset
+def _unit_for_asset(asset):
     ASSET_UNITS = {
         "AAPL": "$",
         "SPY": "$",
         "BTC-USD": "$",
         "BZ=F": "$",
         "GC=F": "$",
-        "^TNX": "%",
+        "^TNX": "%",  # yield index
         "ACA.PA": "€",
         "AIR.PA": "€",
     }
+    return ASSET_UNITS.get(asset, "")
 
-    # Build a long-form DataFrame for tooltip customization
-    df_long = price_df.reset_index().melt(id_vars=price_df.index.name or "Date",
-                                          var_name="Asset",
-                                          value_name="Value")
+# Utility for consistent x-axis formatting
+def _format_xaxis(fig):
+    fig.update_xaxes(dtick="M1", tickformat=DATE_FORMAT)
+    return fig
 
-    # Add unit column
-    df_long["Unit"] = df_long["Asset"].apply(lambda x: ASSET_UNITS.get(x, ""))
+# =====================================================
+# PRICE SERIES WITH UNITS IN TOOLTIP
+# =====================================================
+def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
+    df_long = price_df.reset_index().melt(
+        id_vars=price_df.index.name or "Date",
+        var_name="Asset",
+        value_name="Value",
+    )
+
+    df_long["Unit"] = df_long["Asset"].apply(_unit_for_asset)
 
     fig = px.line(
         df_long,
@@ -56,14 +45,16 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
         y="Value",
         color="Asset",
         title="Asset Price Series",
-        custom_data=["Unit"]
+        custom_data=["Unit"],
     )
 
     fig.update_traces(
-        hovertemplate="<b>%{fullData.name}</b><br>" +
-                      "Date: %{x}<br>" +
-                      "Value: %{y:.2f} %{customdata[0]}<br>" +
-                      "<extra></extra>"
+        hovertemplate=(
+            "<b>%{fullData.name}</b><br>"
+            "Date: %{x}<br>"
+            "Value: %{y:.2f} %{customdata[0]}<br>"
+            "<extra></extra>"
+        )
     )
 
     fig.update_layout(
@@ -72,25 +63,12 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
         legend_title="Assets",
     )
 
-    fig.update_xaxes(
-        dtick="M1",
-        tickformat="%d %b %Y"
-    )
+    return _format_xaxis(fig)
 
-    return fig
-
-
-
-# -----------------------------
-# Portfolio cumulative returns
-# -----------------------------
+# =====================================================
+# CUMULATIVE RETURNS (unit: base 1.0)
+# =====================================================
 def plot_cumulative_returns(cum_series: pd.Series) -> go.Figure:
-    """
-    Plot cumulative portfolio performance.
-
-    Y-axis:
-        - Cumulative value (base = 1.0).
-    """
     fig = px.line(cum_series, title="Portfolio Cumulative Returns")
     fig.update_layout(
         xaxis_title="Date",
@@ -99,12 +77,10 @@ def plot_cumulative_returns(cum_series: pd.Series) -> go.Figure:
     )
     return _format_xaxis(fig)
 
-
-# -----------------------------
-# Correlation heatmap
-# -----------------------------
+# =====================================================
+# CORRELATION HEATMAP
+# =====================================================
 def plot_correlation_heatmap(corr_df: pd.DataFrame) -> go.Figure:
-    """Plot correlation matrix as heatmap (-1 to 1)."""
     fig = px.imshow(
         corr_df,
         text_auto=True,
@@ -114,25 +90,13 @@ def plot_correlation_heatmap(corr_df: pd.DataFrame) -> go.Figure:
         zmax=1,
         title="Correlation Matrix (range: -1 to 1)",
     )
-    fig.update_layout(
-        xaxis_title="Asset",
-        yaxis_title="Asset",
-    )
+    fig.update_layout(xaxis_title="Asset", yaxis_title="Asset")
     return fig
 
-
-# -----------------------------
-# Rolling volatility plot 
-# -----------------------------
+# =====================================================
+# ROLLING VOLATILITY (converted to %)
+# =====================================================
 def plot_rolling_volatility(rolling_vol: pd.DataFrame) -> go.Figure:
-    """
-    Plot rolling volatility for each asset.
-
-    rolling_vol:
-        - in decimal (e.g. 0.15)
-    Display:
-        - converted to %.
-    """
     vol_pct = rolling_vol * 100.0
     fig = px.line(vol_pct, title="Rolling Volatility (%)")
     fig.update_layout(
@@ -142,16 +106,10 @@ def plot_rolling_volatility(rolling_vol: pd.DataFrame) -> go.Figure:
     )
     return _format_xaxis(fig)
 
-
 # =====================================================
-# ADVANCED PRO PLOTS (Mode Pro)
+# ROLLING BETA (unitless)
 # =====================================================
-
-# -----------------------------
-# Rolling Beta
-# -----------------------------
 def plot_rolling_beta(beta_series: pd.Series, benchmark: str) -> go.Figure:
-    """Plot rolling beta vs benchmark (unitless)."""
     fig = px.line(
         beta_series,
         title=f"Rolling Beta vs {benchmark} (unitless)",
@@ -164,19 +122,10 @@ def plot_rolling_beta(beta_series: pd.Series, benchmark: str) -> go.Figure:
     )
     return _format_xaxis(fig)
 
-
-# -----------------------------
-# Drawdown (Pro version)
-# -----------------------------
+# =====================================================
+# DRAWDOWN (converted to %)
+# =====================================================
 def plot_drawdown(drawdown: pd.Series) -> go.Figure:
-    """
-    Plot portfolio drawdown.
-
-    Input:
-        - drawdown in decimal (e.g. -0.20)
-    Output:
-        - shown as percentage.
-    """
     dd_pct = drawdown * 100.0
 
     fig = go.Figure()
@@ -190,33 +139,19 @@ def plot_drawdown(drawdown: pd.Series) -> go.Figure:
             line=dict(color="red"),
         )
     )
+
     fig.update_layout(
         title="Portfolio Drawdown (%)",
         xaxis_title="Date",
         yaxis_title="Drawdown (%)",
     )
+
     return _format_xaxis(fig)
 
-
-# -----------------------------
-# Efficient Frontier
-# -----------------------------
-def plot_efficient_frontier(
-    ef_results: pd.DataFrame,
-    curr_vol: float,
-    curr_ret: float,
-) -> go.Figure:
-    """
-    Plot Efficient Frontier and portfolio point.
-
-    Inputs:
-        - ef_results: Volatility (decimal), Return (decimal), Sharpe
-        - curr_vol: portfolio volatility (decimal)
-        - curr_ret: portfolio return (decimal)
-
-    Display:
-        - % scale for both axes.
-    """
+# =====================================================
+# EFFICIENT FRONTIER (vol & return in %)
+# =====================================================
+def plot_efficient_frontier(ef_results: pd.DataFrame, curr_vol: float, curr_ret: float) -> go.Figure:
     df = ef_results.copy()
     df["Volatility (%)"] = df["Volatility"] * 100.0
     df["Return (%)"] = df["Return"] * 100.0
@@ -246,17 +181,10 @@ def plot_efficient_frontier(
 
     return fig
 
-
-# -----------------------------
-# Rolling Correlation (optional)
-# -----------------------------
-def plot_rolling_correlation(
-    returns: pd.DataFrame,
-    asset1: str,
-    asset2: str,
-    window: int = 60,
-) -> go.Figure:
-    """Plot rolling correlation between two assets (-1 to 1)."""
+# =====================================================
+# ROLLING CORRELATION
+# =====================================================
+def plot_rolling_correlation(returns: pd.DataFrame, asset1: str, asset2: str, window: int = 60) -> go.Figure:
     rolling_corr = returns[asset1].rolling(window).corr(returns[asset2])
 
     fig = px.line(
