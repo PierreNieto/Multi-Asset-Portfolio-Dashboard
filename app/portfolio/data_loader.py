@@ -58,29 +58,35 @@ DEFAULT_TICKERS = [
 ]
 
 
+def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None):
 
-def load_multi_asset_data(tickers, start="2010-01-01"):
-    valid_data = {}
-    invalid = []
+    data = yf.download(
+        tickers,
+        start=start,
+        end=end,
+        progress=False,
+        auto_adjust=False,
+        interval="1d"        
+    )
 
-    for t in tickers:
-        try:
-            df = yf.download(t, start=start)["Adj Close"]
-            if df.empty:
-                invalid.append(t)
-            else:
-                valid_data[t] = df
-        except Exception:
-            invalid.append(t)
+    # yfinance returns a MultiIndex for multiple tickers:
+    # ('Adj Close', 'AAPL'), ('Adj Close', 'SPY') ...
+    if isinstance(data.columns, pd.MultiIndex):
+        # Keep only Adj Close level
+        if "Adj Close" in data.columns.levels[0]:
+            data = data["Adj Close"]
+        else:
+            # fallback : take Close
+            data = data["Close"]
 
-    if not valid_data:
-        return pd.DataFrame()
+        # Flatten columns
+        data.columns = [col for col in data.columns]
 
-    prices = pd.concat(valid_data.values(), axis=1)
-    prices.columns = valid_data.keys()
+    # Ensure DataFrame for single asset
+    if isinstance(data, pd.Series):
+        data = data.to_frame()
 
-    if invalid:
-        st.warning(f"⚠️ Invalid or unavailable tickers ignored: {invalid}")
+    # Clean missing rows (keep full rows only)
+    data = data.dropna(how="any")
 
-    return prices
-
+    return data
