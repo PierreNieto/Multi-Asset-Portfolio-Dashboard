@@ -287,6 +287,64 @@ def run_portfolio_page():
         }
     )
 
+    
+    # -----------------------------
+    # Efficient Frontier (Markowitz)
+    # -----------------------------
+    from app.portfolio.metrics import random_portfolios
+
+    # Sidebar control
+    n_sim = st.sidebar.slider(
+        "Number of portfolios for Efficient Frontier",
+        min_value=2000,
+        max_value=20000,
+        value=5000,
+        step=1000,
+    )
+
+    # Covariance matrix
+    cov_matrix = asset_returns.cov()
+
+    # Simulate frontier
+    ef_results, ef_weights = random_portfolios(asset_returns, cov_matrix, n_sim)
+
+    # Current portfolio performance (annualized)
+    current_vol = np.sqrt(
+        np.dot(weights_used, np.dot(cov_matrix * 252, weights_used))
+    )
+    current_ret = np.dot(
+        weights_used, (asset_returns.mean() * 252)
+    )
+
+    # -----------------------------
+    # Plot Efficient Frontier
+    # -----------------------------
+    import plotly.express as px
+
+    st.subheader("Efficient Frontier (Markowitz)")
+
+    fig = px.scatter(
+        ef_results,
+        x="Volatility",
+        y="Return",
+        color="Sharpe",
+        color_continuous_scale="Viridis",
+        title="Efficient Frontier — Random Portfolios",
+        height=600,
+    )
+
+    # Add your portfolio point in red
+    fig.add_scatter(
+        x=[current_vol],
+        y=[current_ret],
+        mode="markers",
+        marker=dict(color="red", size=14, line=dict(color="black", width=1)),
+        name="Your Portfolio",
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
     # -----------------------------
     # TABS: Overview / Risk / Performance / Macro
     # -----------------------------

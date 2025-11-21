@@ -72,3 +72,35 @@ def compute_var_cvar(returns, level=5):
     var = np.percentile(returns, level)
     cvar = returns[returns < var].mean()
     return var, cvar
+
+def random_portfolios(returns: pd.DataFrame, cov_matrix: pd.DataFrame, n_portfolios: int = 10000):
+    """
+    Generate random portfolios for Markowitz Efficient Frontier.
+
+    Returns:
+        - results: DataFrame with columns [Volatility, Return, Sharpe]
+        - weights_list: list of weight vectors for each portfolio
+    """
+
+    n_assets = returns.shape[1]
+    mean_returns = returns.mean() * 252
+    cov_annual = cov_matrix * 252
+
+    results = []
+    weights_list = []
+
+    for _ in range(n_portfolios):
+        # Random weights
+        weights = np.random.random(n_assets)
+        weights /= weights.sum()
+
+        # Portfolio performance
+        port_return = np.dot(weights, mean_returns)
+        port_vol = np.sqrt(np.dot(weights.T, np.dot(cov_annual, weights)))
+        port_sharpe = port_return / port_vol if port_vol > 0 else np.nan
+
+        results.append([port_vol, port_return, port_sharpe])
+        weights_list.append(weights)
+
+    df_results = pd.DataFrame(results, columns=["Volatility", "Return", "Sharpe"])
+    return df_results, weights_list
