@@ -163,14 +163,14 @@ def run_portfolio_page():
 
     prices = clean_price_data(prices)
 
-    # Force DataFrame even when only one asset is selected
+    # Ensure prices is always a DataFrame
     if isinstance(prices, pd.Series):
         prices = prices.to_frame()
 
-     # reindex on full index then fill gaps
-    full_index = prices.index
-    prices = prices.reindex(full_index)
-    prices = prices.ffill().bfill()
+    # use the full index and fill missing data
+    prices = prices.reindex(prices.index)   # guarantee of rectangular structure
+    prices = prices.ffill().bfill()         # fill missing values forward/backward
+
 
 #-------------------
     # Test : Align all asset series on the same index
