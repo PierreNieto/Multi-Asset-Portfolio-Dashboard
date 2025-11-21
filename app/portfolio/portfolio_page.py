@@ -539,34 +539,36 @@ def run_portfolio_page():
                     st.write(f"### {name}")
                     st.line_chart(df, height=200, use_container_width=True)
 
-# -----------------------------
-# Glossary of symbols & abbreviations
-# -----------------------------
-st.markdown("---")
-st.subheader("📘 Glossary of symbols & abbreviations")
-
-st.markdown(
-"""
-**Assets in this dashboard**
-
-- **AAPL** — Apple Inc. stock (USD, Nasdaq)
-- **SPY** — SPDR S&P 500 ETF tracking the S&P 500 (USD)
-- **ACA.PA** — Crédit Agricole SA stock (EUR, Euronext Paris)
-- **AIR.PA** — Airbus SE stock (EUR, Euronext Paris)
-- **BZ=F** — Brent Crude Oil futures (USD per barrel)
-- **^TNX** — 10-Year US Treasury Note Yield Index (level ≈ yield × 10)
-- **GC=F** — Gold futures (USD per troy ounce)
-- **BTC-USD** — Bitcoin priced in US dollars
-
-**Main quantities**
-
-- **Volatility (%)** — annualized standard deviation of returns
-- **Drawdown (%)** — % drop from the previous running peak of the portfolio
-- **Beta** — sensitivity of the portfolio to the chosen benchmark (≈ market exposure)
-- **VaR 5%** — loss threshold such that 5% of daily returns are worse
-- **CVaR 5%** — average loss when returns are worse than the 5% VaR
+    # -----------------------------
+    # FOOTER — Glossary (small text)
+    # -----------------------------
+    st.markdown("---")
+    st.markdown(
         """
-)
+    <div style="font-size:12px; opacity:0.75">
+    <strong> Glossary of symbols & abbreviations</strong><br><br>
+
+    <u>Assets in this dashboard</u><br>
+    • <strong>AAPL</strong> — Apple Inc. (USD, Nasdaq)<br>
+    • <strong>SPY</strong> — S&P 500 ETF (USD)<br>
+    • <strong>ACA.PA</strong> — Crédit Agricole SA (EUR, Paris)<br>
+    • <strong>AIR.PA</strong> — Airbus SE (EUR, Paris)<br>
+    • <strong>BZ=F</strong> — Brent Crude Oil Futures (USD/bbl)<br>
+    • <strong>^TNX</strong> — US 10-Year Treasury Yield Index<br>
+    • <strong>GC=F</strong> — Gold Futures (USD/oz)<br>
+    • <strong>BTC-USD</strong> — Bitcoin (USD)<br><br>
+
+    <u>Main quantities</u><br>
+    • <strong>Volatility (%)</strong> — annualized standard deviation of returns<br>
+    • <strong>Drawdown (%)</strong> — % drop from running peak<br>
+    • <strong>Beta</strong> — sensitivity to the benchmark<br>
+    • <strong>VaR 5%</strong> — loss threshold exceeded 5% of the time<br>
+    • <strong>CVaR 5%</strong> — average loss beyond the VaR<br>
+    </div>
+    """,
+        unsafe_allow_html=True
+    )
+
 
 if __name__ == "__main__":
     run_portfolio_page()
