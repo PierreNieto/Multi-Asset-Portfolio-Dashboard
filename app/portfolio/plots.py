@@ -9,18 +9,34 @@ import pandas as pd
 DATE_FORMAT = "%d %b %Y"  
 
 # Mapping of units for each asset
-def _unit_for_asset(asset):
-    ASSET_UNITS = {
-        "AAPL": "$",
-        "SPY": "$",
-        "BTC-USD": "$",
-        "BZ=F": "$",
-        "GC=F": "$",
-        "^TNX": "%",  # yield index
-        "ACA.PA": "€",
-        "AIR.PA": "€",
-    }
-    return ASSET_UNITS.get(asset, "")
+def _unit_for_asset(ticker: str) -> str:
+    """Return unit of measure for the given asset, Amundi-style."""
+    if ticker.endswith("-USD"):
+        return "$"
+    if ticker.endswith(".PA") or ticker.endswith(".AS"):
+        return "€"
+    if ticker in ["SPY", "AAPL", "MSFT", "NVDA", "META", "AMZN", "GOOGL", "TSLA", "NVO", "LLY", "BRK-B", "JPM", "V"]:
+        return "$"
+    if ticker == "GC=F":
+        return "$/oz"
+    if ticker == "BZ=F":
+        return "$/bbl"
+    if ticker.startswith("^") or ticker.endswith("=RR"):
+        return "%"
+    return ""
+
+#def _unit_for_asset(asset):
+#    ASSET_UNITS = {
+#        "AAPL": "$",
+#        "SPY": "$",
+#        "BTC-USD": "$",
+#        "BZ=F": "$",
+#        "GC=F": "$",
+#        "^TNX": "%",  # yield index
+#        "ACA.PA": "€",
+#        "AIR.PA": "€",
+#    }
+#    return ASSET_UNITS.get(asset, "")
 
 # Utility for consistent x-axis formatting
 def _format_xaxis(fig):
@@ -92,25 +108,61 @@ def _format_xaxis(fig):
     )
     return fig
 
-# --- NOUVELLE FONCTION ---
 
 def plot_normalized_series(price_df: pd.DataFrame,
                            title: str = "Normalized Performance (base = 100)") -> go.Figure:
     """
-    Plot normalized price series (base 100) to compare assets.
-
-    - On prend le 1er point de chaque série comme base 100.
-    - Utile pour comparer des actifs très différents (BTC, actions, taux, etc.).
+    Normalized price comparison (base 100)
+    Tooltip includes only the asset unit (Amundi style).
     """
-    df_norm = price_df / price_df.iloc[0] * 100.0
 
-    fig = px.line(df_norm, title=title)
+    df_norm = price_df / price_df.iloc[0] * 100.0
+    df_norm = df_norm.reset_index().rename(columns={"index": "Date"})
+
+    fig = go.Figure()
+
+    for asset in price_df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df_norm["Date"],
+                y=df_norm[asset],
+                mode="lines",
+                name=asset,
+                hovertemplate=(
+                    f"<b>{asset}</b><br>"
+                    "Date: %{x|%d %b %Y}<br>"
+                    "Performance Index: %{y:.2f}<br>"
+                    f"Unit: {_unit_for_asset(asset)}"
+                    "<extra></extra>"
+                ),
+            )
+        )
+
     fig.update_layout(
+        title=title,
         xaxis_title="Date",
         yaxis_title="Performance Index (base = 100)",
         legend_title="Assets",
     )
+
     return _format_xaxis(fig)
+
+def _unit_for_asset(ticker: str) -> str:
+    """Return unit of measure for the asset."""
+    if ticker.endswith("-USD"):
+        return "$"
+    if ticker.endswith(".PA") or ticker.endswith(".AS"):
+        return "€"
+    if ticker in ["SPY", "AAPL", "MSFT", "NVDA", "META", "AMZN", "GOOGL", "TSLA", "BRK-B", "JPM", "V", "LLY", "NVO"]:
+        return "$"
+    if ticker == "GC=F":
+        return "$/oz"
+    if ticker == "BZ=F":
+        return "$/bbl"
+    if ticker.startswith("^") or ticker.endswith("=RR"):
+        return "%"
+    return ""
+
 
 # =====================================================
 # CUMULATIVE RETURNS (unit: base 1.0)
