@@ -162,7 +162,11 @@ def run_portfolio_page():
         return
 
     prices = clean_price_data(prices)
-    
+
+    # Force DataFrame even when only one asset is selected
+    if isinstance(prices, pd.Series):
+        prices = prices.to_frame()
+
      # reindex on full index then fill gaps
     full_index = prices.index
     prices = prices.reindex(full_index)

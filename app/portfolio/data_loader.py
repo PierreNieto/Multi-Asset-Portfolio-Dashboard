@@ -57,5 +57,9 @@ def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None)
     else:
         data = data.iloc[:, 0]  # fallback to first column
 
+    # ensure DataFrame always
+    if isinstance(data, pd.Series):
+        data = data.to_frame()
+
     # Remove any date where one of the assets has missing data
     return data.dropna()
