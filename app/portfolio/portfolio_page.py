@@ -588,7 +588,7 @@ def run_portfolio_page():
             port_cum_fig = plot_cumulative_returns(port_cum)
             st.plotly_chart(port_cum_fig, use_container_width=True)
 
-                st.markdown("### Thematic comparison panels")
+        st.markdown("### Thematic comparison panels")
 
         panel = st.selectbox(
             "Select a comparison universe",
