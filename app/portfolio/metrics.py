@@ -67,3 +67,8 @@ def rolling_beta(portfolio_returns, benchmark_returns, window=60):
     var = benchmark_returns.rolling(window).var()
     beta = cov / var
     return beta
+
+def compute_var_cvar(returns, level=5):
+    var = np.percentile(returns, level)
+    cvar = returns[returns < var].mean()
+    return var, cvar

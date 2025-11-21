@@ -48,6 +48,7 @@ from app.portfolio.metrics import (
     annualized_volatility,
     sharpe_ratio,
     diversification_ratio,
+    compute_var_cvar,
 )
 from app.portfolio.plots import (
     plot_price_series,
@@ -138,13 +139,16 @@ def run_portfolio_page():
         step=5,
     )
 
+    # -----------------------------
+    # Benchmark selection (for rolling beta)
+    # -----------------------------
     st.sidebar.subheader("Benchmark Selection")
     benchmark = st.sidebar.selectbox(
         "Benchmark (for Rolling Beta)",
         ["SPY", "QQQ", "^FCHI", "^GSPC", "Custom…"],
         index=0
     )
-    
+
     # -----------------------------
     # Basic validations
     # -----------------------------
@@ -175,24 +179,7 @@ def run_portfolio_page():
     if isinstance(prices, pd.Series):
         prices = prices.to_frame()
 
-    # ---------------------------
-    # Test / history (kept as comments):
-    # We previously tried several alignment strategies:
-    #
-    # - Hard version, big loss of data :
-    #   prices = prices.dropna(how="any")  # strict align to common dates
-    #
-    # - Softer alternative :
-    #   prices = prices.ffill().bfill()   # full alignment by filling gaps
-    #
-    # - Column filtering (removing assets with too few points) :
-    #   prices = prices.loc[:, prices.notna().sum() > 10]
-    #
-    # These approaches either removed too much data or caused issues.
-    # Final decision: keep all assets and align with forward/backward fill.
-    #----------------------------
-
-    # Final alignment choice: forward/backward fill for a rectangular structure
+    # Final alignment: forward/backward fill
     prices = prices.ffill().bfill()
 
     # Maybe resample if needed
@@ -259,9 +246,12 @@ def run_portfolio_page():
     port_ann_vol = annualized_volatility(port_ret)
     port_sharpe = sharpe_ratio(port_ret)
 
-    # Drawdown and Max Drawdown (improvement n°2)
+    # Drawdown
     drawdown = port_cum / port_cum.cummax() - 1
     max_drawdown = drawdown.min() if not drawdown.empty else np.nan
+
+    # Tail risk metrics: VaR & CVaR
+    var_5, cvar_5 = compute_var_cvar(port_ret.dropna(), level=5)
 
     try:
         div_ratio = diversification_ratio(asset_returns, weights_used)
@@ -345,6 +335,15 @@ def run_portfolio_page():
             st.line_chart(dd_df, use_container_width=True)
         else:
             st.info("Not enough data to compute drawdown.")
+
+        # -----------------------------
+        # VaR & CVaR section (NEW)
+        # -----------------------------
+        st.subheader("Portfolio Tail Risk (VaR & CVaR)")
+
+        colA, colB = st.columns(2)
+        colA.metric("Value-at-Risk (5%)", f"{var_5:.2%}")
+        colB.metric("Conditional VaR (5%)", f"{cvar_5:.2%}")
 
     # -----------------------------
     # MACRO TAB
