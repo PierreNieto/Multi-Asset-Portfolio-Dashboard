@@ -271,7 +271,7 @@ def run_portfolio_page():
     if isinstance(port_ret, pd.DataFrame):
         port_ret = port_ret.iloc[:, 0]
 
-    # -----------------------------
+    """# -----------------------------
     # DEBUG DIAGNOSTIC RETURNS
     # -----------------------------
     st.write("---- DEBUG RETURNS ----")
@@ -294,7 +294,7 @@ def run_portfolio_page():
     st.write("Portfolio index sample:", port_ret.index[:5])
 
     port_cum = cumulative_returns(port_ret)
-    corr_mat = correlation_matrix(asset_returns)
+    corr_mat = correlation_matrix(asset_returns)"""
 
    
     # annualization factor

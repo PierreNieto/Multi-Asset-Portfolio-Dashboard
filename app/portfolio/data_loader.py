@@ -21,7 +21,8 @@ def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None)
         start=start,
         end=end,
         progress=False,
-        auto_adjust=False
+        auto_adjust=False,
+        interval="1d"        
     )
 
     # yfinance returns a MultiIndex for multiple tickers:

@@ -93,20 +93,26 @@ def fill_missing_values(df: pd.DataFrame,
 def align_dataframes(dfs: list[pd.DataFrame],
                      how: str = "inner") -> list[pd.DataFrame]:
     """
-    Align multiple DataFrames on the same date index.
+    Align multiple DataFrames on a common date index
+    without destroying most of the data.
 
-    Example:
-        prices_aligned, macro_aligned = align_dataframes([prices, macro])
+    Uses union of indices + forward/backward fill.
     """
     if not dfs:
         return dfs
+
+    # Start with first DF index
     common_index = dfs[0].index
+
     for df in dfs[1:]:
-        if how == "inner":
-            common_index = common_index.intersection(df.index)
-        elif how == "outer":
+        # union = garder toutes les dates
+        if how in ["inner", "outer"]:
             common_index = common_index.union(df.index)
         else:
             raise ValueError("Unsupported align method.")
-    aligned = [df.reindex(common_index) for df in dfs]
+
+    # Reindex and fill missing data
+    aligned = [df.reindex(common_index).ffill().bfill() for df in dfs]
+
     return aligned
+
