@@ -286,6 +286,18 @@ def run_portfolio_page():
     # -----------------------------
     st.markdown("### Price and portfolio charts")
 
+    # Ensure prices is strictly rectangular before Plotly (all columns same length)
+    prices = prices.copy()  # avoid view errors
+    ommon_index = prices.index
+
+    # Force each column to have exactly the same index
+    for col in prices.columns:
+        prices[col] = prices[col].reindex(common_index)
+
+    # Fill again to ensure rectangular structure
+    prices = prices.ffill().bfill()
+
+
     price_fig = plot_price_series(prices)
     st.plotly_chart(price_fig, use_container_width=True)
 
