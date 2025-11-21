@@ -57,6 +57,9 @@ from app.portfolio.plots import (
     plot_cumulative_returns,
     plot_correlation_heatmap,
     plot_rolling_volatility,
+    plot_rolling_beta,       
+    plot_drawdown,            
+    plot_efficient_frontier, 
 )
 from app.portfolio.macro_loader import load_macro_data
 
@@ -467,18 +470,14 @@ def run_portfolio_page():
             if rolling_beta_series is None or rolling_beta_series.dropna().empty:
                 st.info("Not enough data to compute rolling beta for this configuration.")
             else:
-                beta_fig = px.line(
-                    rolling_beta_series,
-                    title=f"Rolling Beta vs {benchmark}",
-                )
-                beta_fig.update_layout(
-                    xaxis_title="Date",
-                    yaxis_title="Beta",
-                )
+                
+                beta_fig = plot_rolling_beta(rolling_beta_series, benchmark)
                 st.plotly_chart(beta_fig, use_container_width=True)
 
+                # Latest beta KPI
                 last_beta = rolling_beta_series.dropna().iloc[-1]
                 st.metric("Latest rolling beta", f"{last_beta:.2f}")
+
 
         # -----------------------------
         # TAIL RISK TAB (Pro)
@@ -487,8 +486,8 @@ def run_portfolio_page():
             st.subheader("Drawdown & Tail Risk")
 
             if not drawdown.empty:
-                dd_df = drawdown.to_frame(name="Drawdown")
-                st.line_chart(dd_df, use_container_width=True)
+                dd_fig = plot_drawdown(drawdown)
+                st.plotly_chart(dd_fig, use_container_width=True)
             else:
                 st.info("Not enough data to compute drawdown.")
 
@@ -524,25 +523,8 @@ def run_portfolio_page():
                 asset_returns.mean() * 252,
             )
 
-            fig = px.scatter(
-                ef_results,
-                x="Volatility",
-                y="Return",
-                color="Sharpe",
-                color_continuous_scale="Viridis",
-                title="Efficient Frontier — Random Portfolios",
-                height=600,
-            )
-
-            fig.add_scatter(
-                x=[current_vol],
-                y=[current_ret],
-                mode="markers",
-                marker=dict(color="red", size=14, line=dict(color="black", width=1)),
-                name="Your Portfolio",
-            )
-
-            st.plotly_chart(fig, use_container_width=True)
+            frontier_fig = plot_efficient_frontier(ef_results, current_vol, current_ret)
+            st.plotly_chart(frontier_fig, use_container_width=True)
 
         # -----------------------------
         # MACRO TAB (Pro)
@@ -557,6 +539,34 @@ def run_portfolio_page():
                     st.write(f"### {name}")
                     st.line_chart(df, height=200, use_container_width=True)
 
+# -----------------------------
+# Glossary of symbols & abbreviations
+# -----------------------------
+st.markdown("---")
+st.subheader("📘 Glossary of symbols & abbreviations")
+
+st.markdown(
+"""
+**Assets in this dashboard**
+
+- **AAPL** — Apple Inc. stock (USD, Nasdaq)
+- **SPY** — SPDR S&P 500 ETF tracking the S&P 500 (USD)
+- **ACA.PA** — Crédit Agricole SA stock (EUR, Euronext Paris)
+- **AIR.PA** — Airbus SE stock (EUR, Euronext Paris)
+- **BZ=F** — Brent Crude Oil futures (USD per barrel)
+- **^TNX** — 10-Year US Treasury Note Yield Index (level ≈ yield × 10)
+- **GC=F** — Gold futures (USD per troy ounce)
+- **BTC-USD** — Bitcoin priced in US dollars
+
+**Main quantities**
+
+- **Volatility (%)** — annualized standard deviation of returns
+- **Drawdown (%)** — % drop from the previous running peak of the portfolio
+- **Beta** — sensitivity of the portfolio to the chosen benchmark (≈ market exposure)
+- **VaR 5%** — loss threshold such that 5% of daily returns are worse
+- **CVaR 5%** — average loss when returns are worse than the 5% VaR
+        """
+)
 
 if __name__ == "__main__":
     run_portfolio_page()
