@@ -14,16 +14,37 @@ def correlation_matrix(returns: pd.DataFrame) -> pd.DataFrame:
 
 
 # -----------------------------
-# Annualized metrics
+# Annualized return (corrected)
 # -----------------------------
-def annualized_return(returns: pd.Series | pd.DataFrame, freq=252):
+def annualized_return(returns: pd.Series | pd.DataFrame, freq: int = 252):
+    """
+    Compute correct annualized return for both simple and log returns.
+
+    Logic:
+    - If returns are DataFrame: apply column-wise
+    - If returns are Series:
+        • If returns look like log-returns → use exponential formula
+        • Else simple returns → use geometric compounding formula
+    """
+
+    # Case 1 — DataFrame: apply column-wise
     if isinstance(returns, pd.DataFrame):
-        return (1 + returns).prod() ** (freq / len(returns)) - 1
-    else:
-        return (1 + returns).prod() ** (freq / len(returns)) - 1
+        return returns.apply(annualized_return, freq=freq)
+
+    # Case 2 — Series: detect if log-returns
+    # Log returns satisfy: lr = ln(1 + r)
+    # so they are mostly between -0.2 and 0.2
+    if returns.abs().max() < 0.5:
+        # Probably log-returns → exponential compounding
+        return np.exp(returns.sum() * (freq / len(returns))) - 1
+
+    # Case 3 — Simple returns → geometric compounding
+    return (1 + returns).prod() ** (freq / len(returns)) - 1
 
 
-
+# -----------------------------
+# Annualized volatility
+# -----------------------------
 def annualized_volatility(returns: pd.DataFrame | pd.Series,
                           freq: int = 252) -> float | pd.Series:
     """Compute annualized volatility."""
@@ -38,7 +59,7 @@ def annualized_volatility(returns: pd.DataFrame | pd.Series,
 def sharpe_ratio(returns: pd.DataFrame | pd.Series,
                  risk_free_rate: float = 0.0,
                  freq: int = 252) -> float | pd.Series:
-    """Compute Sharpe ratio."""
+    """Compute Sharpe ratio with annualized metrics."""
     excess_ret = returns - risk_free_rate / freq
     ann_ret = annualized_return(excess_ret, freq)
     ann_vol = annualized_volatility(excess_ret, freq)
@@ -62,17 +83,29 @@ def diversification_ratio(returns: pd.DataFrame,
     weighted_stds = (w * stds).sum()
     return weighted_stds / portfolio_vol
 
+
+# -----------------------------
+# Rolling beta
+# -----------------------------
 def rolling_beta(portfolio_returns, benchmark_returns, window=60):
     cov = portfolio_returns.rolling(window).cov(benchmark_returns)
     var = benchmark_returns.rolling(window).var()
     beta = cov / var
     return beta
 
+
+# -----------------------------
+# VaR & CVaR
+# -----------------------------
 def compute_var_cvar(returns, level=5):
     var = np.percentile(returns, level)
     cvar = returns[returns < var].mean()
     return var, cvar
 
+
+# -----------------------------
+# Markowitz Efficient Frontier (random portfolios)
+# -----------------------------
 def random_portfolios(returns: pd.DataFrame, cov_matrix: pd.DataFrame, n_portfolios: int = 10000):
     """
     Generate random portfolios for Markowitz Efficient Frontier.
