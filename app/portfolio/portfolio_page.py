@@ -27,6 +27,7 @@ import datetime as dt
 import streamlit as st
 import pandas as pd
 import numpy as np
+import plotly.express as px
 
 from app.portfolio.data_loader import load_multi_asset_data, DEFAULT_TICKERS
 from app.portfolio.preprocessing import (
@@ -49,6 +50,7 @@ from app.portfolio.metrics import (
     sharpe_ratio,
     diversification_ratio,
     compute_var_cvar,
+    random_portfolios,
 )
 from app.portfolio.plots import (
     plot_price_series,
@@ -68,6 +70,18 @@ def _map_freq_label_to_code(label: str) -> str:
     if label == "Monthly":
         return "M"
     return "D"
+
+
+def _compute_rolling_beta(
+    portfolio_returns: pd.Series,
+    benchmark_returns: pd.Series,
+    window: int,
+) -> pd.Series:
+    """Compute rolling beta of portfolio vs benchmark."""
+    cov = portfolio_returns.rolling(window).cov(benchmark_returns)
+    var = benchmark_returns.rolling(window).var()
+    beta = cov / var
+    return beta
 
 
 def run_portfolio_page():
@@ -139,14 +153,11 @@ def run_portfolio_page():
         step=5,
     )
 
-    # -----------------------------
-    # Benchmark selection (for rolling beta)
-    # -----------------------------
     st.sidebar.subheader("Benchmark Selection")
     benchmark = st.sidebar.selectbox(
         "Benchmark (for Rolling Beta)",
-        ["SPY", "QQQ", "^FCHI", "^GSPC", "Custom…"],
-        index=0
+        ["SPY", "QQQ", "^FCHI", "^GSPC"],
+        index=0,
     )
 
     # -----------------------------
@@ -179,7 +190,7 @@ def run_portfolio_page():
     if isinstance(prices, pd.Series):
         prices = prices.to_frame()
 
-    # Final alignment: forward/backward fill
+    # Final alignment choice: forward/backward fill for a rectangular structure
     prices = prices.ffill().bfill()
 
     # Maybe resample if needed
@@ -232,11 +243,15 @@ def run_portfolio_page():
         weights_used = custom_weights
         port_ret = custom_weight_portfolio(asset_returns, weights_used)
 
+    # Ensure portfolio returns is a Series
+    if isinstance(port_ret, pd.DataFrame):
+        port_ret = port_ret.iloc[:, 0]
+
     port_cum = cumulative_returns(port_ret)
     corr_mat = correlation_matrix(asset_returns)
 
     # -----------------------------
-    # Metrics
+    # Core metrics
     # -----------------------------
     asset_ann_ret = annualized_return(asset_returns)
     asset_ann_vol = annualized_volatility(asset_returns)
@@ -246,13 +261,14 @@ def run_portfolio_page():
     port_ann_vol = annualized_volatility(port_ret)
     port_sharpe = sharpe_ratio(port_ret)
 
-    # Drawdown
+    # Drawdown & max drawdown (used in Pro / Tail Risk)
     drawdown = port_cum / port_cum.cummax() - 1
     max_drawdown = drawdown.min() if not drawdown.empty else np.nan
 
-    # Tail risk metrics: VaR & CVaR
+    # Tail risk metrics: VaR & CVaR (used in Pro / Tail Risk)
     var_5, cvar_5 = compute_var_cvar(port_ret.dropna(), level=5)
 
+    # Diversification ratio
     try:
         div_ratio = diversification_ratio(asset_returns, weights_used)
     except Exception:
@@ -287,134 +303,259 @@ def run_portfolio_page():
         }
     )
 
-    
     # -----------------------------
-    # Efficient Frontier (Markowitz)
+    # Mode selector: Standard vs Pro
     # -----------------------------
-    from app.portfolio.metrics import random_portfolios
-
-    # Sidebar control
-    n_sim = st.sidebar.slider(
-        "Number of portfolios for Efficient Frontier",
-        min_value=2000,
-        max_value=20000,
-        value=5000,
-        step=1000,
+    mode = st.radio(
+        "Display mode",
+        ["Standard", "Pro"],
+        index=0,
+        horizontal=True,
     )
 
-    # Covariance matrix
-    cov_matrix = asset_returns.cov()
-
-    # Simulate frontier
-    ef_results, ef_weights = random_portfolios(asset_returns, cov_matrix, n_sim)
-
-    # Current portfolio performance (annualized)
-    current_vol = np.sqrt(
-        np.dot(weights_used, np.dot(cov_matrix * 252, weights_used))
-    )
-    current_ret = np.dot(
-        weights_used, (asset_returns.mean() * 252)
-    )
-
-    # -----------------------------
-    # Plot Efficient Frontier
-    # -----------------------------
-    import plotly.express as px
-
-    st.subheader("Efficient Frontier (Markowitz)")
-
-    fig = px.scatter(
-        ef_results,
-        x="Volatility",
-        y="Return",
-        color="Sharpe",
-        color_continuous_scale="Viridis",
-        title="Efficient Frontier — Random Portfolios",
-        height=600,
-    )
-
-    # Add your portfolio point in red
-    fig.add_scatter(
-        x=[current_vol],
-        y=[current_ret],
-        mode="markers",
-        marker=dict(color="red", size=14, line=dict(color="black", width=1)),
-        name="Your Portfolio",
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-
-    # -----------------------------
-    # TABS: Overview / Risk / Performance / Macro
-    # -----------------------------
-    overview_tab, risk_tab, perf_tab, macro_tab = st.tabs(
-        ["Overview", "Risk Analysis", "Performance", "Macro Dashboard"]
-    )
-
-    # -----------------------------
-    # OVERVIEW TAB
-    # -----------------------------
-    with overview_tab:
-        st.subheader("Price and Portfolio Overview")
-
-        price_fig = plot_price_series(prices)
-        st.plotly_chart(price_fig, use_container_width=True)
-
-        port_cum_fig = plot_cumulative_returns(port_cum)
-        st.plotly_chart(port_cum_fig, use_container_width=True)
-
-    # -----------------------------
-    # RISK ANALYSIS TAB
-    # -----------------------------
-    with risk_tab:
-        st.subheader("Correlation Matrix")
-        corr_fig = plot_correlation_heatmap(corr_mat)
-        st.plotly_chart(corr_fig, use_container_width=True)
-
-        st.subheader("Rolling Volatility")
-        roll_vol = rolling_volatility(asset_returns, window=rolling_window)
-        if not roll_vol.empty:
-            roll_vol_fig = plot_rolling_volatility(roll_vol)
-            st.plotly_chart(roll_vol_fig, use_container_width=True)
-        else:
-            st.info("Not enough data to compute rolling volatility.")
-
-    # -----------------------------
-    # PERFORMANCE TAB
-    # -----------------------------
-    with perf_tab:
-        st.subheader("Asset-level metrics")
-        st.dataframe(metrics_df.style.format("{:.4f}"), use_container_width=True)
-
-        st.subheader("Portfolio drawdown")
-        if not drawdown.empty:
-            dd_df = drawdown.to_frame(name="Drawdown")
-            st.line_chart(dd_df, use_container_width=True)
-        else:
-            st.info("Not enough data to compute drawdown.")
+    # =====================================================
+    # MODE STANDARD
+    # =====================================================
+    if mode == "Standard":
+        overview_tab, risk_tab, perf_tab, macro_tab = st.tabs(
+            ["Overview", "Risk Analysis", "Performance", "Macro Dashboard"]
+        )
 
         # -----------------------------
-        # VaR & CVaR section (NEW)
+        # OVERVIEW TAB (Standard)
         # -----------------------------
-        st.subheader("Portfolio Tail Risk (VaR & CVaR)")
+        with overview_tab:
+            st.subheader("Price and Portfolio Overview")
+            price_fig = plot_price_series(prices)
+            st.plotly_chart(price_fig, use_container_width=True)
 
-        colA, colB = st.columns(2)
-        colA.metric("Value-at-Risk (5%)", f"{var_5:.2%}")
-        colB.metric("Conditional VaR (5%)", f"{cvar_5:.2%}")
+            port_cum_fig = plot_cumulative_returns(port_cum)
+            st.plotly_chart(port_cum_fig, use_container_width=True)
 
-    # -----------------------------
-    # MACRO TAB
-    # -----------------------------
-    with macro_tab:
-        st.subheader("Macro Indicators (FRED)")
+        # -----------------------------
+        # RISK ANALYSIS TAB (Standard)
+        # -----------------------------
+        with risk_tab:
+            st.subheader("Correlation Matrix")
+            corr_fig = plot_correlation_heatmap(corr_mat)
+            st.plotly_chart(corr_fig, use_container_width=True)
 
-        if not macro_data_aligned:
-            st.info("No macro data available for the selected start date.")
-        else:
-            for name, df in macro_data_aligned.items():
-                st.write(f"### {name}")
-                st.line_chart(df, height=200, use_container_width=True)
+            st.subheader("Rolling Volatility")
+            roll_vol = rolling_volatility(asset_returns, window=rolling_window)
+            if not roll_vol.empty:
+                roll_vol_fig = plot_rolling_volatility(roll_vol)
+                st.plotly_chart(roll_vol_fig, use_container_width=True)
+            else:
+                st.info("Not enough data to compute rolling volatility.")
+
+        # -----------------------------
+        # PERFORMANCE TAB (Standard)
+        # -----------------------------
+        with perf_tab:
+            st.subheader("Asset-level metrics")
+            st.dataframe(metrics_df.style.format("{:.4f}"), use_container_width=True)
+
+        # -----------------------------
+        # MACRO TAB (Standard)
+        # -----------------------------
+        with macro_tab:
+            st.subheader("Macro Indicators (FRED)")
+
+            if not macro_data_aligned:
+                st.info("No macro data available for the selected start date.")
+            else:
+                for name, df in macro_data_aligned.items():
+                    st.write(f"### {name}")
+                    st.line_chart(df, height=200, use_container_width=True)
+
+    # =====================================================
+    # MODE PRO
+    # =====================================================
+    else:
+        pro_overview_tab, pro_risk_tab, pro_beta_tab, pro_tail_tab, pro_frontier_tab, pro_macro_tab = st.tabs(
+            [
+                "Overview",
+                "Risk",
+                "Rolling Beta",
+                "Tail Risk",
+                "Efficient Frontier",
+                "Macro Dashboard",
+            ]
+        )
+
+        # -----------------------------
+        # PRE-COMPUTE THINGS USED ONLY IN PRO
+        # -----------------------------
+
+        # Benchmark returns for beta
+        rolling_beta_series = None
+        try:
+            bench_prices_raw = load_multi_asset_data(
+                tickers=[benchmark],
+                start=start_date.isoformat(),
+            )
+            if isinstance(bench_prices_raw, pd.DataFrame):
+                bench_prices = bench_prices_raw.iloc[:, 0]
+            else:
+                bench_prices = bench_prices_raw
+
+            bench_prices = bench_prices.sort_index().ffill().bfill()
+
+            if freq_code != "D":
+                bench_prices = resample_price_data(
+                    bench_prices.to_frame(), freq=freq_code, how="last"
+                ).iloc[:, 0]
+
+            if return_type == "Simple returns":
+                bench_ret_series = compute_simple_returns(
+                    bench_prices.to_frame()
+                ).iloc[:, 0]
+            else:
+                bench_ret_series = compute_log_returns(
+                    bench_prices.to_frame()
+                ).iloc[:, 0]
+
+            aligned_port, aligned_bench = align_dataframes(
+                [
+                    port_ret.to_frame("Portfolio"),
+                    bench_ret_series.to_frame("Benchmark"),
+                ]
+            )
+            port_ret_aligned = aligned_port["Portfolio"]
+            bench_ret_aligned = aligned_bench["Benchmark"]
+
+            rolling_beta_series = _compute_rolling_beta(
+                port_ret_aligned, bench_ret_aligned, rolling_window
+            )
+        except Exception:
+            rolling_beta_series = None
+
+        # -----------------------------
+        # OVERVIEW TAB (Pro)
+        # -----------------------------
+        with pro_overview_tab:
+            st.subheader("Price and Portfolio Overview (Pro)")
+            price_fig = plot_price_series(prices)
+            st.plotly_chart(price_fig, use_container_width=True)
+
+            port_cum_fig = plot_cumulative_returns(port_cum)
+            st.plotly_chart(port_cum_fig, use_container_width=True)
+
+        # -----------------------------
+        # RISK TAB (Pro)
+        # -----------------------------
+        with pro_risk_tab:
+            st.subheader("Correlation & Volatility")
+
+            corr_fig = plot_correlation_heatmap(corr_mat)
+            st.plotly_chart(corr_fig, use_container_width=True)
+
+            st.subheader("Rolling Volatility (Pro)")
+            roll_vol = rolling_volatility(asset_returns, window=rolling_window)
+            if not roll_vol.empty:
+                roll_vol_fig = plot_rolling_volatility(roll_vol)
+                st.plotly_chart(roll_vol_fig, use_container_width=True)
+            else:
+                st.info("Not enough data to compute rolling volatility.")
+
+        # -----------------------------
+        # ROLLING BETA TAB (Pro)
+        # -----------------------------
+        with pro_beta_tab:
+            st.subheader(f"Rolling Beta vs {benchmark}")
+
+            if rolling_beta_series is None or rolling_beta_series.dropna().empty:
+                st.info("Not enough data to compute rolling beta for this configuration.")
+            else:
+                beta_fig = px.line(
+                    rolling_beta_series,
+                    title=f"Rolling Beta vs {benchmark}",
+                )
+                beta_fig.update_layout(
+                    xaxis_title="Date",
+                    yaxis_title="Beta",
+                )
+                st.plotly_chart(beta_fig, use_container_width=True)
+
+                last_beta = rolling_beta_series.dropna().iloc[-1]
+                st.metric("Latest rolling beta", f"{last_beta:.2f}")
+
+        # -----------------------------
+        # TAIL RISK TAB (Pro)
+        # -----------------------------
+        with pro_tail_tab:
+            st.subheader("Drawdown & Tail Risk")
+
+            if not drawdown.empty:
+                dd_df = drawdown.to_frame(name="Drawdown")
+                st.line_chart(dd_df, use_container_width=True)
+            else:
+                st.info("Not enough data to compute drawdown.")
+
+            st.markdown("---")
+            st.subheader("VaR & CVaR (5%)")
+
+            colA, colB = st.columns(2)
+            colA.metric("Value-at-Risk (5%)", f"{var_5:.2%}")
+            colB.metric("Conditional VaR (5%)", f"{cvar_5:.2%}")
+
+        # -----------------------------
+        # EFFICIENT FRONTIER TAB (Pro)
+        # -----------------------------
+        with pro_frontier_tab:
+            st.subheader("Efficient Frontier (Markowitz)")
+
+            n_sim = st.slider(
+                "Number of simulated portfolios",
+                min_value=2000,
+                max_value=20000,
+                value=5000,
+                step=1000,
+            )
+
+            cov_matrix = asset_returns.cov()
+            ef_results, ef_weights = random_portfolios(asset_returns, cov_matrix, n_sim)
+
+            current_vol = np.sqrt(
+                np.dot(weights_used, np.dot(cov_matrix * 252, weights_used))
+            )
+            current_ret = np.dot(
+                weights_used,
+                asset_returns.mean() * 252,
+            )
+
+            fig = px.scatter(
+                ef_results,
+                x="Volatility",
+                y="Return",
+                color="Sharpe",
+                color_continuous_scale="Viridis",
+                title="Efficient Frontier — Random Portfolios",
+                height=600,
+            )
+
+            fig.add_scatter(
+                x=[current_vol],
+                y=[current_ret],
+                mode="markers",
+                marker=dict(color="red", size=14, line=dict(color="black", width=1)),
+                name="Your Portfolio",
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # MACRO TAB (Pro)
+        # -----------------------------
+        with pro_macro_tab:
+            st.subheader("Macro Indicators (FRED) — Pro View")
+
+            if not macro_data_aligned:
+                st.info("No macro data available for the selected start date.")
+            else:
+                for name, df in macro_data_aligned.items():
+                    st.write(f"### {name}")
+                    st.line_chart(df, height=200, use_container_width=True)
 
 
 if __name__ == "__main__":
