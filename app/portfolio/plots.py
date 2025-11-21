@@ -24,20 +24,61 @@ def _format_xaxis(fig):
 # -----------------------------
 # Multi-asset price chart
 # -----------------------------
+
 def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
     """
-    Plot multi-asset price series.
-
-    Y-axis:
-        - Price / Level (native units of each asset).
+    Plot multi-asset price series with correct currency/tooltips.
     """
-    fig = px.line(price_df, title="Asset Price Series")
+
+    # Define units per asset
+    ASSET_UNITS = {
+        "AAPL": "$",
+        "SPY": "$",
+        "BTC-USD": "$",
+        "BZ=F": "$",
+        "GC=F": "$",
+        "^TNX": "%",
+        "ACA.PA": "€",
+        "AIR.PA": "€",
+    }
+
+    # Build a long-form DataFrame for tooltip customization
+    df_long = price_df.reset_index().melt(id_vars=price_df.index.name or "Date",
+                                          var_name="Asset",
+                                          value_name="Value")
+
+    # Add unit column
+    df_long["Unit"] = df_long["Asset"].apply(lambda x: ASSET_UNITS.get(x, ""))
+
+    fig = px.line(
+        df_long,
+        x="Date",
+        y="Value",
+        color="Asset",
+        title="Asset Price Series",
+        custom_data=["Unit"]
+    )
+
+    fig.update_traces(
+        hovertemplate="<b>%{fullData.name}</b><br>" +
+                      "Date: %{x}<br>" +
+                      "Value: %{y:.2f} %{customdata[0]}<br>" +
+                      "<extra></extra>"
+    )
+
     fig.update_layout(
         xaxis_title="Date",
         yaxis_title="Price / Level (native units)",
         legend_title="Assets",
     )
-    return _format_xaxis(fig)
+
+    fig.update_xaxes(
+        dtick="M1",
+        tickformat="%d %b %Y"
+    )
+
+    return fig
+
 
 
 # -----------------------------
