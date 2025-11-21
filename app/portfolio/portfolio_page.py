@@ -290,15 +290,12 @@ def run_portfolio_page():
     # -----------------------------
     st.markdown("### Price and portfolio charts")
 
-    # Ensure prices is strictly rectangular before Plotly (all columns same length)
-    prices = prices.copy()  # avoid view errors
-    ommon_index = prices.index
+    # Ensure prices is always a DataFrame
+    if isinstance(prices, pd.Series):
+        prices = prices.to_frame()
 
-    # Force each column to have exactly the same index
-    for col in prices.columns:
-        prices[col] = prices[col].reindex(common_index)
-
-    # Fill again to ensure rectangular structure
+    # Align all columns on the full index and fill missing values
+    prices = prices.reindex(prices.index)
     prices = prices.ffill().bfill()
 
 
