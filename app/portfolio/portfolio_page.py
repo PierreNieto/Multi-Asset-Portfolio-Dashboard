@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 #---------------------------
-
-#I got an issue with the importation with streamlit so i
+# I got an issue with the importation with Streamlit so I
 # add the project root directory to PYTHONPATH.
-# Because streamlit executes scripts from a temporary working directory,
+# Because Streamlit executes scripts from a temporary working directory,
 # which prevents relative imports such as `from app.portfolio ...`
 # from working correctly when running pages directly.
-
-# So, by dynamically adding the project root to sys.path, i ensure
+#
+# So, by dynamically adding the project root to sys.path, I ensure
 # that the `app` package can always be imported, both when:
 # - running this page directly with `streamlit run`,
 # - running the full dashboard through the global main.py.
+#---------------------------
 
 import sys
 import os
@@ -26,6 +26,7 @@ import datetime as dt
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 from app.portfolio.data_loader import load_multi_asset_data, DEFAULT_TICKERS
 from app.portfolio.preprocessing import (
@@ -55,7 +56,6 @@ from app.portfolio.plots import (
     plot_rolling_volatility,
 )
 from app.portfolio.macro_loader import load_macro_data
-import numpy as np
 
 
 def _map_freq_label_to_code(label: str) -> str:
@@ -161,35 +161,34 @@ def run_portfolio_page():
         st.warning("No price data available for the selected configuration.")
         return
 
+    # Clean and align price data
     prices = clean_price_data(prices)
 
-    # Ensure prices is always a DataFrame
+    # Ensure prices is always a DataFrame (even if only one asset is selected)
     if isinstance(prices, pd.Series):
         prices = prices.to_frame()
 
-    # use the full index and fill missing data
-    # prices = prices.reindex(prices.index)   # useless now : guarantee of rectangular structure
-    prices = prices.ffill().bfill()         # fill missing values forward/backward
+    # ---------------------------
+    # Test / history (kept as comments):
+    # We previously tried several alignment strategies:
+    #
+    # - Hard version, big loss of data :
+    #   prices = prices.dropna(how="any")  # strict align to common dates
+    #
+    # - Softer alternative :
+    #   prices = prices.ffill().bfill()   # full alignment by filling gaps
+    #
+    # - Column filtering (removing assets with too few points) :
+    #   prices = prices.loc[:, prices.notna().sum() > 10]
+    #
+    # These approaches either removed too much data or caused issues.
+    # Final decision: keep all assets and align with forward/backward fill.
+    #----------------------------
 
+    # Final alignment choice: forward/backward fill for a rectangular structure
+    prices = prices.ffill().bfill()
 
-#-------------------
-    # Test : Align all asset series on the same index
-
-    # Hard version, big loss of data :
-    # prices = prices.dropna(how="any")  # strict align to common dates
-    # Alternative softer :
-    #prices = prices.ffill().bfill()   # full alignment by filling gaps
-
-    # Remove assets with insufficient data (prevents Plotly crash)
-    #prices = prices.loc[:, prices.notna().sum() > 10]
-
-    #if prices.shape[1] == 0:
-        #st.error("No assets have enough data to display. Try another date range.")
-        #return
-#-------------------
-
-
-    # Maybe resample if needed..?
+    # Maybe resample if needed
     freq_code = _map_freq_label_to_code(freq_label)
     if freq_code != "D":
         prices = resample_price_data(prices, freq=freq_code, how="last")
@@ -221,7 +220,7 @@ def run_portfolio_page():
     else:
         asset_returns = compute_log_returns(prices)
 
-    # FIX: ensure DataFrame even with 1 asset
+    # Ensure DataFrame even with 1 asset
     if isinstance(asset_returns, pd.Series):
         asset_returns = asset_returns.to_frame()
 
@@ -253,29 +252,36 @@ def run_portfolio_page():
     port_ann_vol = annualized_volatility(port_ret)
     port_sharpe = sharpe_ratio(port_ret)
 
+    # Drawdown and Max Drawdown (improvement n°2)
+    drawdown = port_cum / port_cum.cummax() - 1
+    max_drawdown = drawdown.min() if not drawdown.empty else np.nan
+
     try:
         div_ratio = diversification_ratio(asset_returns, weights_used)
     except Exception:
         div_ratio = None
 
     # -----------------------------
-    # Layout: metrics + charts
+    # Portfolio summary (top KPIs)
     # -----------------------------
     st.subheader("Portfolio summary")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("Portfolio annualized return", f"{port_ann_ret * 100:.2f}%")
     col2.metric("Portfolio annualized volatility", f"{port_ann_vol * 100:.2f}%")
     if np.isfinite(port_sharpe):
         col3.metric("Portfolio Sharpe ratio", f"{port_sharpe:.2f}")
     else:
         col3.metric("Portfolio Sharpe ratio", "N/A")
+    if np.isfinite(max_drawdown):
+        col4.metric("Max drawdown", f"{max_drawdown * 100:.2f}%")
+    else:
+        col4.metric("Max drawdown", "N/A")
 
     if div_ratio is not None:
         st.caption(f"Diversification ratio: {div_ratio:.2f}")
 
-    # Asset-level table
-    st.markdown("### Asset-level metrics")
+    # Asset-level metrics DataFrame
     metrics_df = pd.DataFrame(
         {
             "Annualized return": asset_ann_ret,
@@ -283,72 +289,69 @@ def run_portfolio_page():
             "Sharpe ratio": asset_sharpe,
         }
     )
-    st.dataframe(metrics_df.style.format("{:.4f}"))
 
-# -----------------------------
-# TABS: Overview / Risk / Performance / Macro
-# -----------------------------
-overview_tab, risk_tab, perf_tab, macro_tab = st.tabs(
-    ["Overview", "Risk Analysis", "Performance", "Macro Dashboard"]
-)
-
-# -----------------------------
-# OVERVIEW TAB
-# -----------------------------
-with overview_tab:
-
-    st.subheader("Price and Portfolio Overview")
-
-    price_fig = plot_price_series(prices)
-    st.plotly_chart(price_fig, use_container_width=True)
-
-    port_cum_fig = plot_cumulative_returns(port_cum)
-    st.plotly_chart(port_cum_fig, use_container_width=True)
-
-# -----------------------------
-# RISK ANALYSIS TAB
-# -----------------------------
-with risk_tab:
-
-    st.subheader("Correlation Matrix")
-    corr_fig = plot_correlation_heatmap(corr_mat)
-    st.plotly_chart(corr_fig, use_container_width=True)
-
-    st.subheader("Rolling Volatility")
-    roll_vol = rolling_volatility(asset_returns, window=rolling_window)
-    if not roll_vol.empty:
-        roll_vol_fig = plot_rolling_volatility(roll_vol)
-        st.plotly_chart(roll_vol_fig, use_container_width=True)
-
-# -----------------------------
-# PERFORMANCE TAB
-# -----------------------------
-with perf_tab:
-
-    st.subheader("Asset-level metrics")
-
-    metrics_df = pd.DataFrame(
-        {
-            "Annualized return": asset_ann_ret,
-            "Annualized volatility": asset_ann_vol,
-            "Sharpe ratio": asset_sharpe,
-        }
+    # -----------------------------
+    # TABS: Overview / Risk / Performance / Macro
+    # -----------------------------
+    overview_tab, risk_tab, perf_tab, macro_tab = st.tabs(
+        ["Overview", "Risk Analysis", "Performance", "Macro Dashboard"]
     )
-    st.dataframe(metrics_df.style.format("{:.4f}"), use_container_width=True)
 
-# -----------------------------
-# MACRO TAB
-# -----------------------------
-with macro_tab:
+    # -----------------------------
+    # OVERVIEW TAB
+    # -----------------------------
+    with overview_tab:
+        st.subheader("Price and Portfolio Overview")
 
-    st.subheader("Macro Indicators")
+        price_fig = plot_price_series(prices)
+        st.plotly_chart(price_fig, use_container_width=True)
 
-    if not macro_data_aligned:
-        st.info("No macro data available for the selected start date.")
-    else:
-        for name, df in macro_data_aligned.items():
-            st.write(f"### {name}")
-            st.line_chart(df, height=200, use_container_width=True)
+        port_cum_fig = plot_cumulative_returns(port_cum)
+        st.plotly_chart(port_cum_fig, use_container_width=True)
+
+    # -----------------------------
+    # RISK ANALYSIS TAB
+    # -----------------------------
+    with risk_tab:
+        st.subheader("Correlation Matrix")
+        corr_fig = plot_correlation_heatmap(corr_mat)
+        st.plotly_chart(corr_fig, use_container_width=True)
+
+        st.subheader("Rolling Volatility")
+        roll_vol = rolling_volatility(asset_returns, window=rolling_window)
+        if not roll_vol.empty:
+            roll_vol_fig = plot_rolling_volatility(roll_vol)
+            st.plotly_chart(roll_vol_fig, use_container_width=True)
+        else:
+            st.info("Not enough data to compute rolling volatility.")
+
+    # -----------------------------
+    # PERFORMANCE TAB
+    # -----------------------------
+    with perf_tab:
+        st.subheader("Asset-level metrics")
+        st.dataframe(metrics_df.style.format("{:.4f}"), use_container_width=True)
+
+        st.subheader("Portfolio drawdown")
+        if not drawdown.empty:
+            dd_df = drawdown.to_frame(name="Drawdown")
+            st.line_chart(dd_df, use_container_width=True)
+        else:
+            st.info("Not enough data to compute drawdown.")
+
+    # -----------------------------
+    # MACRO TAB
+    # -----------------------------
+    with macro_tab:
+        st.subheader("Macro Indicators (FRED)")
+
+        if not macro_data_aligned:
+            st.info("No macro data available for the selected start date.")
+        else:
+            for name, df in macro_data_aligned.items():
+                st.write(f"### {name}")
+                st.line_chart(df, height=200, use_container_width=True)
+
 
 if __name__ == "__main__":
     run_portfolio_page()
