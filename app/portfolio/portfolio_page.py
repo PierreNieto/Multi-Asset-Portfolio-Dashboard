@@ -160,9 +160,9 @@ def run_portfolio_page():
 
         st.sidebar.write(f"**Normalized weights:** {custom_weights}")
 
-else:
-    # If not in custom mode, do nothing
-    raw_weights = None
+    else:
+        # If not in custom mode, do nothing
+        raw_weights = None
 
 
 
