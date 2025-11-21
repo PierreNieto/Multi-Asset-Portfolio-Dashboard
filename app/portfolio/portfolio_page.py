@@ -272,16 +272,29 @@ def run_portfolio_page():
     port_cum = cumulative_returns(port_ret)
     corr_mat = correlation_matrix(asset_returns)
 
-    # -----------------------------
-    # Core metrics
-    # -----------------------------
-    asset_ann_ret = annualized_return(asset_returns)
-    asset_ann_vol = annualized_volatility(asset_returns)
-    asset_sharpe = sharpe_ratio(asset_returns)
+   
+    # annualization factor
 
-    port_ann_ret = annualized_return(port_ret)
-    port_ann_vol = annualized_volatility(port_ret)
-    port_sharpe = sharpe_ratio(port_ret)
+    if freq_code == "D":
+        ann_factor = 252
+    elif freq_code == "W":
+        ann_factor = 52
+    elif freq_code == "M":
+        ann_factor = 12
+    else:
+        ann_factor = 252  # fallback
+
+    # -----------------------------
+    # Core metrics 
+    # -----------------------------
+    asset_ann_ret = annualized_return(asset_returns, freq=ann_factor)
+    asset_ann_vol = annualized_volatility(asset_returns, freq=ann_factor)
+    asset_sharpe  = sharpe_ratio(asset_returns, freq=ann_factor)
+
+    port_ann_ret = annualized_return(port_ret, freq=ann_factor)
+    port_ann_vol = annualized_volatility(port_ret, freq=ann_factor)
+    port_sharpe  = sharpe_ratio(port_ret, freq=ann_factor)
+
 
     # Drawdown & max drawdown (used in Pro / Tail Risk)
     drawdown = port_cum / port_cum.cummax() - 1
