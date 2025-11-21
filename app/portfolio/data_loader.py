@@ -10,59 +10,38 @@ import yfinance as yf
 import pandas as pd
 
 DEFAULT_TICKERS = [
-    "AAPL",        # Apple - US Tech
-    "SPY",         # S&P 500 ETF
-    "ACA.PA",      # Crédit Agricole - European Finance
-    "AIR.PA",      # Airbus - Europe
-    "BZ=F",        # Brent Crude Oil
-    "^TNX",        # US 10Y Bond Yield
-    "GC=F",        # Gold
-    "BTC-USD"      # Bitcoin
+    "AAPL", "SPY", "ACA.PA", "AIR.PA",
+    "BZ=F", "^TNX", "GC=F", "BTC-USD"
 ]
 
 def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None):
-    """
-    Download adjusted close prices for a diversified basket of assets.
-    """
 
     data = yf.download(
         tickers,
         start=start,
         end=end,
-        progress=False
+        progress=False,
+        auto_adjust=False
     )
 
-    # ------------------------------------------------------------
-    # Why this fallback block is added:
-    #
-    # Most Yahoo Finance tickers provide an "Adj Close" column,
-    # which is the correct price to use for financial analysis
-    # (adjusted for dividends and stock splits).
-    #
-    # However, some tickers do NOT provide "Adj Close":
-    # - certain interest rate tickers (e.g., ^TNX)
-    # - some indices
-    # - some commodities
-    #
-    # Without this verification, the code would crash.
-    #
-    # Therefore:
-    # - If "Adj Close" exists → we use it (standard case)
-    # - If not → we use the first available column as a fallback
-    #
-    # This makes the data loader more robust and prevents unexpected errors.
-    # ------------------------------------------------------------
-    if "Adj Close" in data.columns:
-        data = data["Adj Close"]
-    else:
-        data = data.iloc[:, 0]  # fallback to first column
+    # yfinance returns a MultiIndex for multiple tickers:
+    # ('Adj Close', 'AAPL'), ('Adj Close', 'SPY') ...
+    if isinstance(data.columns, pd.MultiIndex):
+        # Keep only Adj Close level
+        if "Adj Close" in data.columns.levels[0]:
+            data = data["Adj Close"]
+        else:
+            # fallback : take Close
+            data = data["Close"]
 
-    # ensure DataFrame always
+        # Flatten columns
+        data.columns = [col for col in data.columns]
+
+    # Ensure DataFrame for single asset
     if isinstance(data, pd.Series):
         data = data.to_frame()
-    # Flatten MultiIndex if needed
-    if isinstance(data.columns, pd.MultiIndex):
-        data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in data.columns]
 
-    # Remove any date where one of the assets has missing data
-    return data.dropna()
+    # Clean missing rows (keep full rows only)
+    data = data.dropna(how="any")
+
+    return data

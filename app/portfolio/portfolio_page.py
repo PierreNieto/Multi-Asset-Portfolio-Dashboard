@@ -168,7 +168,7 @@ def run_portfolio_page():
         prices = prices.to_frame()
 
     # use the full index and fill missing data
-    prices = prices.reindex(prices.index)   # guarantee of rectangular structure
+    # prices = prices.reindex(prices.index)   # useless now : guarantee of rectangular structure
     prices = prices.ffill().bfill()         # fill missing values forward/backward
 
 
