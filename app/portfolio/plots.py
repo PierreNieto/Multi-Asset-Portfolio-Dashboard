@@ -24,8 +24,13 @@ def _unit_for_asset(asset):
 
 # Utility for consistent x-axis formatting
 def _format_xaxis(fig):
-    fig.update_xaxes(dtick="M1", tickformat=DATE_FORMAT)
+    fig.update_xaxes(
+        tickformat=DATE_FORMAT,   # show day + month + year
+        ticks="outside",
+        ticklabelmode="period"    # prevents label overlap
+    )
     return fig
+
 
 # =====================================================
 # PRICE SERIES WITH UNITS IN TOOLTIP
