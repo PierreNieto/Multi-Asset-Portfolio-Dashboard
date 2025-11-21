@@ -16,12 +16,12 @@ def correlation_matrix(returns: pd.DataFrame) -> pd.DataFrame:
 # -----------------------------
 # Annualized metrics
 # -----------------------------
-def annualized_return(returns: pd.DataFrame | pd.Series,
-                      freq: int = 252) -> float | pd.Series:
-    """Compute annualized return."""
+def annualized_return(returns: pd.Series | pd.DataFrame, freq=252):
     if isinstance(returns, pd.DataFrame):
-        return (1 + returns.mean() * freq) - 1
-    return (1 + returns.mean() * freq) - 1
+        return (1 + returns).prod() ** (freq / len(returns)) - 1
+    else:
+        return (1 + returns).prod() ** (freq / len(returns)) - 1
+
 
 
 def annualized_volatility(returns: pd.DataFrame | pd.Series,
