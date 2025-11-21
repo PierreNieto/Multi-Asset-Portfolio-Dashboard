@@ -264,10 +264,34 @@ def run_portfolio_page():
             return
         weights_used = custom_weights
         port_ret = custom_weight_portfolio(asset_returns, weights_used)
+        
+
 
     # Ensure portfolio returns is a Series
     if isinstance(port_ret, pd.DataFrame):
         port_ret = port_ret.iloc[:, 0]
+
+    # -----------------------------
+    # DEBUG DIAGNOSTIC RETURNS
+    # -----------------------------
+    st.write("---- DEBUG RETURNS ----")
+
+    st.write("asset_returns.describe():", asset_returns.describe())
+    st.write("asset_returns max:", asset_returns.max().max())
+    st.write("asset_returns min:", asset_returns.min().min())
+
+    st.write("port_ret.describe():", port_ret.describe())
+    st.write("Max daily portfolio return:", float(port_ret.max()))
+    st.write("Min daily portfolio return:", float(port_ret.min()))
+    st.write("Mean daily portfolio return:", float(port_ret.mean()))
+
+    st.write("Length prices:", len(prices))
+    st.write("Length asset_returns:", len(asset_returns))
+    st.write("Length port_ret:", len(port_ret))
+
+    st.write("Price index sample:", prices.index[:5])
+    st.write("Returns index sample:", asset_returns.index[:5])
+    st.write("Portfolio index sample:", port_ret.index[:5])
 
     port_cum = cumulative_returns(port_ret)
     corr_mat = correlation_matrix(asset_returns)
