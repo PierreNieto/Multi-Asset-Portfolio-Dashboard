@@ -10,9 +10,53 @@ import yfinance as yf
 import pandas as pd
 
 DEFAULT_TICKERS = [
-    "AAPL", "SPY", "ACA.PA", "AIR.PA",
-    "BZ=F", "^TNX", "GC=F", "BTC-USD"
+    # Core equity indices / ETFs / US megacaps
+    "SPY",          # S&P 500 ETF
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "GOOGL",
+    "AMZN",
+    "META",
+    "TSLA",
+    "BRK-B",
+    "JPM",
+    "V",
+
+    # Non-US large caps
+    "TSM",
+    "NVO",
+    "LLY",
+    "ASML.AS",
+    "ADYEN.AS",
+    "SAN.PA",
+
+    # CAC40 / Euronext leaders
+    "ACA.PA",
+    "AIR.PA",
+    "MC.PA",
+    "OR.PA",
+    "TTE.PA",
+
+    # China / HK large caps
+    "0700.HK",      # Tencent
+    "9988.HK",      # Alibaba
+    "600519.SS",    # Kweichow Moutai
+
+    # Commodities & crypto
+    "BZ=F",         # Brent
+    "GC=F",         # Gold
+    "BTC-USD",
+    "ETH-USD",
+
+    # Rates / sovereign yields (à ajuster selon ce que supporte Yahoo)
+    "^TNX",         # US 10Y
+    "FR10Y=RR",     # France 10Y (si dispo)
+    "IT10Y=RR",     # Italy 10Y
+    "GR10Y=RR",     # Greece 10Y
+    "BR10Y=RR",     # Brazil 10Y
 ]
+
 
 def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None):
 
