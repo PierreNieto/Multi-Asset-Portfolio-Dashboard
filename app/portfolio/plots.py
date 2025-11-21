@@ -30,9 +30,19 @@ def _format_xaxis(fig):
 # =====================================================
 # PRICE SERIES WITH UNITS IN TOOLTIP
 # =====================================================
+
 def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
-    df_long = price_df.reset_index().melt(
-        id_vars=price_df.index.name or "Date",
+    """
+    Plot multi-asset price series with correct currency/tooltips.
+    """
+
+    # Reset index and enforce a proper date column name
+    df_reset = price_df.reset_index()
+    df_reset = df_reset.rename(columns={df_reset.columns[0]: "Date"})
+
+    # Long format needed for custom tooltip
+    df_long = df_reset.melt(
+        id_vars="Date",
         var_name="Asset",
         value_name="Value",
     )
@@ -64,6 +74,7 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
     )
 
     return _format_xaxis(fig)
+
 
 # =====================================================
 # CUMULATIVE RETURNS (unit: base 1.0)
