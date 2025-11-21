@@ -350,16 +350,5 @@ with macro_tab:
             st.write(f"### {name}")
             st.line_chart(df, height=200, use_container_width=True)
 
-    # -----------------------------
-    # Macro section
-    # -----------------------------
-    st.markdown("### Macro indicators (FRED)")
-
-    if not macro_data_aligned:
-        st.info("No macro data available for the selected start date.")
-    else:
-        for name, df in macro_data_aligned.items():
-            st.line_chart(df, height=200, use_container_width=True)
-
 if __name__ == "__main__":
     run_portfolio_page()
