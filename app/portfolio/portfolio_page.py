@@ -64,6 +64,43 @@ from app.portfolio.plots import (
 )
 from app.portfolio.macro_loader import load_macro_data
 
+# -------------------------------------------------
+# Predefined baskets of assets
+# -------------------------------------------------
+
+PREDEFINED_BASKETS = {
+    "Custom Selection": [],
+
+    "My Base Portfolio": [
+        "AAPL", "MSFT", "NVDA", "SPY", "GC=F", "BTC-USD"
+    ],
+
+    "Top 15 Global Market Cap": [
+        "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
+        "META", "TSM", "LLY", "BRK-B", "JPM",
+        "V", "NVO", "ASML.AS", "TSLA", "MC.PA"
+    ],
+
+    "Top 3 by Region (US / CAC40 / Euronext / China)": [
+        # US
+        "AAPL", "MSFT", "NVDA",
+        # CAC40
+        "MC.PA", "OR.PA", "TTE.PA",
+        # Euronext
+        "ASML.AS", "ADYEN.AS", "SAN.PA",
+        # China
+        "0700.HK", "9988.HK", "600519.SS",
+    ],
+
+    "Sovereign Bonds (10Y)": [
+        "^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR",
+    ],
+
+    "Crypto / Gold / SP500 / Nvidia": [
+        "BTC-USD", "ETH-USD", "GC=F", "SPY", "NVDA",
+    ],
+}
+
 
 def _map_freq_label_to_code(label: str) -> str:
     """Map UI frequency label to pandas resample code."""
@@ -127,11 +164,25 @@ def run_portfolio_page():
     st.sidebar.header("Portfolio Settings")
 
     st.sidebar.markdown("### Asset universe")
+    # Predefined basket selector
+    basket_choice = st.sidebar.selectbox(
+    "Predefined basket",
+    list(PREDEFINED_BASKETS.keys()),
+    index=0
+    )
+
+    # If predefined basket selected, override the multiselect default
+    if basket_choice == "Custom Selection":
+        default_selection = DEFAULT_TICKERS
+    else:
+        default_selection = PREDEFINED_BASKETS[basket_choice]
+
     selected_tickers = st.sidebar.multiselect(
         "Select assets",
         options=DEFAULT_TICKERS,
-        default=DEFAULT_TICKERS,
+        default=default_selection,
     )
+
 
     start_date = st.sidebar.date_input(
         "Start date",
