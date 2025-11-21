@@ -60,6 +60,9 @@ def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None)
     # ensure DataFrame always
     if isinstance(data, pd.Series):
         data = data.to_frame()
+    # Flatten MultiIndex if needed
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in data.columns]
 
     # Remove any date where one of the assets has missing data
     return data.dropna()
