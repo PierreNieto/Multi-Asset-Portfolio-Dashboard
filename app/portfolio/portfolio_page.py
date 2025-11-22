@@ -789,31 +789,77 @@ def run_portfolio_page():
                     st.line_chart(df, height=200, use_container_width=True)
 
     # -----------------------------
-    # FOOTER — Glossary (small text)
+    # FOOTER — Glossary 
     # -----------------------------
     st.markdown("---")
     st.markdown(
         """
-    <div style="font-size:12px; opacity:0.75">
-    <strong> Glossary of symbols & abbreviations</strong><br><br>
+    ### 📘 Glossary of Symbols & Abbreviations  
 
-    <u>Assets in this dashboard</u><br>
-    • <strong>AAPL</strong> — Apple Inc. (USD, Nasdaq)<br>
-    • <strong>SPY</strong> — S&P 500 ETF (USD)<br>
-    • <strong>ACA.PA</strong> — Crédit Agricole SA (EUR, Paris)<br>
-    • <strong>AIR.PA</strong> — Airbus SE (EUR, Paris)<br>
-    • <strong>BZ=F</strong> — Brent Crude Oil Futures (USD/bbl)<br>
-    • <strong>^TNX</strong> — US 10-Year Treasury Yield Index<br>
-    • <strong>GC=F</strong> — Gold Futures (USD/oz)<br>
-    • <strong>BTC-USD</strong> — Bitcoin (USD)<br><br>
+    ---
 
-    <u>Main quantities</u><br>
-    • <strong>Volatility (%)</strong> — annualized standard deviation of returns<br>
-    • <strong>Drawdown (%)</strong> — % drop from running peak<br>
-    • <strong>Beta</strong> — sensitivity to the benchmark<br>
-    • <strong>VaR 5%</strong> — loss threshold exceeded 5% of the time<br>
-    • <strong>CVaR 5%</strong> — average loss beyond the VaR<br>
-    </div>
+    #### **Assets in this dashboard**
+
+    **U.S. Equities & ETFs**  
+    - **AAPL** — Apple Inc. (USD, Nasdaq)  
+    - **MSFT** — Microsoft (USD, Nasdaq)  
+    - **NVDA** — NVIDIA (USD, Nasdaq)  
+    - **AMZN** — Amazon (USD, Nasdaq)  
+    - **GOOGL** — Alphabet (USD, Nasdaq)  
+    - **META** — Meta Platforms (USD, Nasdaq)  
+    - **TSLA** — Tesla Inc. (USD, Nasdaq)  
+    - **LLY** — Eli Lilly (USD, NYSE)  
+    - **BRK-B** — Berkshire Hathaway Class B (USD, NYSE)  
+    - **JPM** — JPMorgan Chase (USD, NYSE)  
+    - **V** — Visa Inc. (USD, NYSE)  
+    - **SPY** — SPDR S&P 500 ETF (USD)  
+
+    **European Equities (Euronext & CAC40)**  
+    - **MC.PA** — LVMH (EUR, Paris)  
+    - **OR.PA** — L’Oréal (EUR, Paris)  
+    - **TTE.PA** — TotalEnergies (EUR, Paris)  
+    - **ACA.PA** — Crédit Agricole (EUR, Paris)  
+    - **AIR.PA** — Airbus SE (EUR, Paris)  
+    - **SAN.PA** — Sanofi (EUR, Paris)  
+    - **ASML.AS** — ASML Holding (EUR, Amsterdam)  
+    - **ADYEN.AS** — Adyen NV (EUR, Amsterdam)  
+
+    **Asia / China / Hong Kong**  
+    - **0700.HK** — Tencent (HKD, Hong Kong)  
+    - **9988.HK** — Alibaba (HKD, Hong Kong)  
+    - **600519.SS** — Kweichow Moutai (CNY, Shanghai)  
+
+    **Cryptoassets**  
+    - **BTC-USD** — Bitcoin (USD)  
+    - **ETH-USD** — Ethereum (USD)  
+
+    **Commodities**  
+    - **GC=F** — Gold Futures (USD/oz)  
+    - **BZ=F** — Brent Crude Oil Futures (USD/bbl)  
+
+    **Sovereign Yields / Rates**  
+    - **^TNX** — U.S. 10-Year Treasury Yield (%)  
+    - **FR10Y=RR** — French 10-Year Sovereign Yield (%)  
+    - **IT10Y=RR** — Italian 10-Year Sovereign Yield (%)  
+    - **GR10Y=RR** — Greek 10-Year Sovereign Yield (%)  
+    - **BR10Y=RR** — Brazilian 10-Year Sovereign Yield (%)  
+
+    ---
+
+    #### **Main Financial Quantities**
+
+    - **Volatility (%)** — annualized standard deviation of returns  
+    - **Drawdown (%)** — percentage drop from a previous peak  
+    - **Beta** — sensitivity of the portfolio relative to a benchmark  
+    - **Sharpe Ratio** — excess return per unit of risk  
+    - **VaR 5%** — worst expected daily loss at a 95% confidence level  
+    - **CVaR 5%** — average loss when returns fall below the VaR threshold  
+    - **Diversification Ratio** — ratio measuring portfolio spread of risk  
+    - **Performance Index (base 100)** — normalized price index for comparability  
+
+    ---
+
+
     """,
         unsafe_allow_html=True
     )
