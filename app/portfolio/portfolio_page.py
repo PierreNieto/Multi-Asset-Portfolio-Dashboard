@@ -169,23 +169,58 @@ def _compute_rolling_beta(
     beta = cov / var
     return beta
 
+
 # -----------------------------
-# Thematic panel — Real price charts with units
+# Helper: reload clean data for thematic panels only
+# -----------------------------
+
+def _load_thematic_prices(tickers, start_date: dt.date, freq_code: str) -> pd.DataFrame | None:
+    """
+    Load a clean price DataFrame for a given thematic panel:
+    - only the requested tickers
+    - from the chosen start_date
+    - ffill only (no bfill)
+    - resampled to the chosen frequency.
+    """
+    try:
+        raw = load_multi_asset_data(
+            tickers=tickers,
+            start=start_date.isoformat(),
+        )
+    except Exception as e:
+        st.warning(f"Failed to load data for thematic panel: {e}")
+        return None
+
+    if raw is None or raw.empty:
+        st.info("No price data available for this thematic panel.")
+        return None
+
+    raw = clean_price_data(raw)
+
+    if isinstance(raw, pd.Series):
+        raw = raw.to_frame()
+
+    raw = raw.sort_index().ffill()
+
+    if freq_code != "D":
+        raw = resample_price_data(raw, freq=freq_code, how="last")
+
+    return raw
+
+
+# -----------------------------
+# (Old helper kept for reference – not used anymore)
 # -----------------------------
 
 def _plot_thematic_panel(prices, tickers, title):
     """
-    Thematic comparison panel using REAL PRICES (no normalization)
-    Shows correctly formatted values (k/M/B) + units ($, €, %, oz...)
+    Legacy helper (unused). The logic is now handled by _load_thematic_prices
+    and the new per-panel blocks in run_portfolio_page.
     """
-
-    # Filter only tickers present in the price DataFrame
     df = prices[[t for t in tickers if t in prices.columns]]
-
     if df.empty:
         st.warning("No price data available for this thematic panel.")
         return
-
     fig = plot_real_prices(df, UNITS, title=title)
     st.plotly_chart(fig, use_container_width=True)
 
@@ -345,19 +380,15 @@ def run_portfolio_page():
             macro_keys.append(key)
 
     # Outer-join style alignment on a unified index
-    # We build a global index that is the union of prices + all macro series.
     if macro_series:
-        # Start from price index
         union_index = prices.index
         for df in macro_series:
             union_index = union_index.union(df.index)
 
         union_index = union_index.sort_values()
 
-        # Reindex prices on the union index and fill gaps
         prices = prices.reindex(union_index).ffill()
 
-        # Reindex each macro series on the same union index
         macro_data_aligned = {}
         for key, df in macro_data.items():
             if df.empty:
@@ -516,26 +547,28 @@ def run_portfolio_page():
         # -----------------------------
         if panel == "Crypto / Gold / SP500 / Nvidia":
             tickers = ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # Sovereign Bonds
         # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
             tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="10Y Government Bond Yields — Real Levels",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="10Y Government Bond Yields — Real Levels",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # Top 3 by Region
@@ -547,13 +580,14 @@ def run_portfolio_page():
                 "ASML.AS", "ADYEN.AS", "SAN.PA",  # Euronext
                 "0700.HK", "9988.HK", "600519.SS" # China/HK
             ]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="Top 3 per Region — Real Prices",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="Top 3 per Region — Real Prices",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # Top 15 Global Market Cap
@@ -564,13 +598,14 @@ def run_portfolio_page():
                 "META", "TSM", "LLY", "JPM", "V",
                 "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
             ]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="Top 15 Global Market Cap — Real Prices",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="Top 15 Global Market Cap — Real Prices",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # RISK ANALYSIS TAB (Standard)
@@ -705,26 +740,28 @@ def run_portfolio_page():
         # -----------------------------
         if panel == "Crypto / Gold / SP500 / Nvidia":
             tickers = ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # Sovereign Bonds
         # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
             tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="10Y Government Bond Yields — Real Levels",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="10Y Government Bond Yields — Real Levels",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # Top 3 by Region
@@ -736,13 +773,14 @@ def run_portfolio_page():
                 "ASML.AS", "ADYEN.AS", "SAN.PA",  # Euronext
                 "0700.HK", "9988.HK", "600519.SS" # China/HK
             ]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="Top 3 per Region — Real Prices",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="Top 3 per Region — Real Prices",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # Top 15 Global Market Cap
@@ -753,13 +791,14 @@ def run_portfolio_page():
                 "META", "TSM", "LLY", "JPM", "V",
                 "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
             ]
-            df = prices[[t for t in tickers if t in prices.columns]]
-            fig = plot_real_prices(
-                df,
-                UNITS,
-                title="Top 15 Global Market Cap — Real Prices",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
+            if df_thematic is not None:
+                fig = plot_real_prices(
+                    df_thematic,
+                    UNITS,
+                    title="Top 15 Global Market Cap — Real Prices",
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # RISK TAB (Pro)
