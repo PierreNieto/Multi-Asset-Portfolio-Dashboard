@@ -794,36 +794,51 @@ def run_portfolio_page():
     st.markdown("---")
     st.markdown(
         """
-    <hr>
-    <div style="font-size:12px; opacity:0.75; line-height:1.35">
+    <u>Assets in this dashboard</u><br>
 
-    <b>📘 Glossary of Symbols & Units</b><br><br>
+    <!-- US Equities & ETFs -->
+    • <strong>AAPL</strong> — Apple Inc. (USD, Nasdaq)<br>
+    • <strong>MSFT</strong> — Microsoft (USD, Nasdaq)<br>
+    • <strong>NVDA</strong> — NVIDIA Corp. (USD, Nasdaq)<br>
+    • <strong>AMZN</strong> — Amazon.com (USD, Nasdaq)<br>
+    • <strong>GOOGL</strong> — Alphabet Class A (USD, Nasdaq)<br>
+    • <strong>META</strong> — Meta Platforms (USD, Nasdaq)<br>
+    • <strong>TSLA</strong> — Tesla Inc. (USD, Nasdaq)<br>
+    • <strong>LLY</strong> — Eli Lilly (USD, NYSE)<br>
+    • <strong>BRK-B</strong> — Berkshire Hathaway Class B (USD, NYSE)<br>
+    • <strong>JPM</strong> — JPMorgan Chase (USD, NYSE)<br>
+    • <strong>V</strong> — Visa Inc. (USD, NYSE)<br>
+    • <strong>SPY</strong> — SPDR S&P 500 ETF (USD)<br><br>
 
-    <b>U.S. Equities & ETFs</b><br>
-    AAPL (USD), MSFT (USD), NVDA (USD), AMZN (USD), GOOGL (USD), META (USD), TSLA (USD),  
-    LLY (USD), BRK-B (USD), JPM (USD), V (USD), SPY (USD)<br><br>
+    <!-- European Equities -->
+    • <strong>MC.PA</strong> — LVMH (EUR, Paris)<br>
+    • <strong>OR.PA</strong> — L’Oréal (EUR, Paris)<br>
+    • <strong>TTE.PA</strong> — TotalEnergies (EUR, Paris)<br>
+    • <strong>ACA.PA</strong> — Crédit Agricole SA (EUR, Paris)<br>
+    • <strong>AIR.PA</strong> — Airbus SE (EUR, Paris)<br>
+    • <strong>SAN.PA</strong> — Sanofi (EUR, Paris)<br>
+    • <strong>ASML.AS</strong> — ASML Holding (EUR, Amsterdam)<br>
+    • <strong>ADYEN.AS</strong> — Adyen NV (EUR, Amsterdam)<br><br>
 
-    <b>European Equities</b><br>
-    MC.PA (EUR), OR.PA (EUR), TTE.PA (EUR), ACA.PA (EUR), AIR.PA (EUR), SAN.PA (EUR),  
-    ASML.AS (EUR), ADYEN.AS (EUR)<br><br>
+    <!-- Asia / China -->
+    • <strong>0700.HK</strong> — Tencent Holdings (HKD, Hong Kong)<br>
+    • <strong>9988.HK</strong> — Alibaba Group (HKD, Hong Kong)<br>
+    • <strong>600519.SS</strong> — Kweichow Moutai (CNY, Shanghai)<br><br>
 
-    <b>Asia / China</b><br>
-    0700.HK (HKD), 9988.HK (HKD), 600519.SS (CNY)<br><br>
+    <!-- Cryptoassets -->
+    • <strong>BTC-USD</strong> — Bitcoin (USD)<br>
+    • <strong>ETH-USD</strong> — Ethereum (USD)<br><br>
 
-    <b>Cryptoassets</b><br>
-    BTC-USD ($), ETH-USD ($)<br><br>
+    <!-- Commodities -->
+    • <strong>GC=F</strong> — Gold Futures (USD/oz)<br>
+    • <strong>BZ=F</strong> — Brent Crude Oil Futures (USD/bbl)<br><br>
 
-    <b>Commodities</b><br>
-    GC=F ($/oz), BZ=F ($/bbl)<br><br>
-
-    <b>Sovereign Yields</b><br>
-    ^TNX (%), FR10Y=RR (%), IT10Y=RR (%), GR10Y=RR (%), BR10Y=RR (%)<br><br>
-
-    <b>Main Metrics</b><br>
-    Volatility (%), Drawdown (%), Beta (unitless), Sharpe (unitless),  
-    VaR 5% (% loss threshold), CVaR 5% (mean loss beyond VaR),  
-    Performance Index (base 100)
-    </div>
+    <!-- Sovereign Yields & Rates -->
+    • <strong>^TNX</strong> — U.S. 10-Year Treasury Yield (%)<br>
+    • <strong>FR10Y=RR</strong> — France 10-Year Sovereign Yield (%)<br>
+    • <strong>IT10Y=RR</strong> — Italy 10-Year Sovereign Yield (%)<br>
+    • <strong>GR10Y=RR</strong> — Greece 10-Year Sovereign Yield (%)<br>
+    • <strong>BR10Y=RR</strong> — Brazil 10-Year Sovereign Yield (%)<br><br>
 
 
 
