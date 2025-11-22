@@ -147,7 +147,6 @@ UNITS = {
 }
 
 
-
 def _map_freq_label_to_code(label: str) -> str:
     """Map UI frequency label to pandas resample code."""
     if label == "Daily":
@@ -180,19 +179,15 @@ def _plot_thematic_panel(prices, tickers, title):
     Shows correctly formatted values (k/M/B) + units ($, €, %, oz...)
     """
 
-    # Filtrer uniquement les tickers présents
+    # Filter only tickers present in the price DataFrame
     df = prices[[t for t in tickers if t in prices.columns]]
 
     if df.empty:
         st.warning("No price data available for this thematic panel.")
         return
 
-    # Appel du nouveau graphique prix réel
-    from app.portfolio.plots import plot_real_prices
     fig = plot_real_prices(df, UNITS, title=title)
-
     st.plotly_chart(fig, use_container_width=True)
-
 
 
 def run_portfolio_page():
@@ -210,9 +205,9 @@ def run_portfolio_page():
     st.sidebar.markdown("### Asset universe")
     # Predefined basket selector
     basket_choice = st.sidebar.selectbox(
-    "Predefined basket",
-    list(PREDEFINED_BASKETS.keys()),
-    index=0
+        "Predefined basket",
+        list(PREDEFINED_BASKETS.keys()),
+        index=0
     )
 
     # If predefined basket selected, override the multiselect default
@@ -226,7 +221,6 @@ def run_portfolio_page():
         options=DEFAULT_TICKERS,
         default=default_selection,
     )
-
 
     start_date = st.sidebar.date_input(
         "Start date",
@@ -281,12 +275,9 @@ def run_portfolio_page():
             custom_weights = [1 / len(raw_weights)] * len(raw_weights)
 
         st.sidebar.write(f"**Normalized weights:** {custom_weights}")
-
     else:
         # If not in custom mode, do nothing
         raw_weights = None
-
-
 
     st.sidebar.markdown("### Rolling metrics")
     rolling_window = st.sidebar.slider(
@@ -334,8 +325,8 @@ def run_portfolio_page():
     if isinstance(prices, pd.Series):
         prices = prices.to_frame()
 
-    # Final alignment choice: forward/backward fill for a rectangular structure
-    prices = prices.ffill().bfill()
+    # Rectangularize price data (per-asset history is preserved by index)
+    prices = prices.sort_index().ffill().bfill()
 
     # Maybe resample if needed
     freq_code = _map_freq_label_to_code(freq_label)
@@ -347,17 +338,32 @@ def run_portfolio_page():
     # -----------------------------
     macro_data = load_macro_data(start=start_date.isoformat())
     macro_series = []
+    macro_keys = []
     for key, df in macro_data.items():
         if not df.empty:
             macro_series.append(df)
+            macro_keys.append(key)
 
-    # Align macro and prices if we have macro data
+    # Outer-join style alignment on a unified index
+    # We build a global index that is the union of prices + all macro series.
     if macro_series:
-        aligned_prices, *aligned_macro = align_dataframes([prices] + macro_series)
-        prices = aligned_prices
-        macro_data_aligned = {
-            key: df for key, df in zip(macro_data.keys(), aligned_macro)
-        }
+        # Start from price index
+        union_index = prices.index
+        for df in macro_series:
+            union_index = union_index.union(df.index)
+
+        union_index = union_index.sort_values()
+
+        # Reindex prices on the union index and fill gaps
+        prices = prices.reindex(union_index).ffill().bfill()
+
+        # Reindex each macro series on the same union index
+        macro_data_aligned = {}
+        for key, df in macro_data.items():
+            if df.empty:
+                continue
+            aligned_df = df.reindex(union_index).ffill().bfill()
+            macro_data_aligned[key] = aligned_df
     else:
         macro_data_aligned = {}
 
@@ -386,41 +392,15 @@ def run_portfolio_page():
             return
         weights_used = custom_weights
         port_ret = custom_weight_portfolio(asset_returns, weights_used)
-        
-
 
     # Ensure portfolio returns is a Series
     if isinstance(port_ret, pd.DataFrame):
         port_ret = port_ret.iloc[:, 0]
 
-    # -----------------------------
-    # DEBUG DIAGNOSTIC RETURNS
-    # -----------------------------
-    #st.write("---- DEBUG RETURNS ----")
-
-    #st.write("asset_returns.describe():", asset_returns.describe())
-    #st.write("asset_returns max:", asset_returns.max().max())
-    #st.write("asset_returns min:", asset_returns.min().min())
-
-    #st.write("port_ret.describe():", port_ret.describe())
-    #st.write("Max daily portfolio return:", float(port_ret.max()))
-    #st.write("Min daily portfolio return:", float(port_ret.min()))
-    #st.write("Mean daily portfolio return:", float(port_ret.mean()))
-
-    #st.write("Length prices:", len(prices))
-    #st.write("Length asset_returns:", len(asset_returns))
-    #st.write("Length port_ret:", len(port_ret))
-
-    #st.write("Price index sample:", prices.index[:5])
-    #st.write("Returns index sample:", asset_returns.index[:5])
-    #st.write("Portfolio index sample:", port_ret.index[:5])
-
     port_cum = cumulative_returns(port_ret)
     corr_mat = correlation_matrix(asset_returns)
 
-   
     # annualization factor
-
     if freq_code == "D":
         ann_factor = 252
     elif freq_code == "W":
@@ -440,7 +420,6 @@ def run_portfolio_page():
     port_ann_ret = annualized_return(port_ret, freq=ann_factor)
     port_ann_vol = annualized_volatility(port_ret, freq=ann_factor)
     port_sharpe  = sharpe_ratio(port_ret, freq=ann_factor)
-
 
     # Drawdown & max drawdown (used in Pro / Tail Risk)
     drawdown = port_cum / port_cum.cummax() - 1
@@ -537,10 +516,12 @@ def run_portfolio_page():
         # -----------------------------
         if panel == "Crypto / Gold / SP500 / Nvidia":
             tickers = ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -548,10 +529,12 @@ def run_portfolio_page():
         # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
             tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="10Y Government Bond Yields — Real Levels")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="10Y Government Bond Yields — Real Levels",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -564,10 +547,12 @@ def run_portfolio_page():
                 "ASML.AS", "ADYEN.AS", "SAN.PA",  # Euronext
                 "0700.HK", "9988.HK", "600519.SS" # China/HK
             ]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="Top 3 per Region — Real Prices")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="Top 3 per Region — Real Prices",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -579,13 +564,13 @@ def run_portfolio_page():
                 "META", "TSM", "LLY", "JPM", "V",
                 "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
             ]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="Top 15 Global Market Cap — Real Prices")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="Top 15 Global Market Cap — Real Prices",
+            )
             st.plotly_chart(fig, use_container_width=True)
-
-
 
         # -----------------------------
         # RISK ANALYSIS TAB (Standard)
@@ -691,8 +676,8 @@ def run_portfolio_page():
         with pro_overview_tab:
             st.subheader("Price and Portfolio Overview (Pro)")
             price_fig = plot_normalized_series(
-            prices,
-            title="Global Performance Index (base = 100)",
+                prices,
+                title="Global Performance Index (base = 100)",
             )
             st.plotly_chart(price_fig, use_container_width=True)
 
@@ -720,10 +705,12 @@ def run_portfolio_page():
         # -----------------------------
         if panel == "Crypto / Gold / SP500 / Nvidia":
             tickers = ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -731,10 +718,12 @@ def run_portfolio_page():
         # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
             tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="10Y Government Bond Yields — Real Levels")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="10Y Government Bond Yields — Real Levels",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -747,10 +736,12 @@ def run_portfolio_page():
                 "ASML.AS", "ADYEN.AS", "SAN.PA",  # Euronext
                 "0700.HK", "9988.HK", "600519.SS" # China/HK
             ]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="Top 3 per Region — Real Prices")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="Top 3 per Region — Real Prices",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -762,10 +753,12 @@ def run_portfolio_page():
                 "META", "TSM", "LLY", "JPM", "V",
                 "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
             ]
-
             df = prices[[t for t in tickers if t in prices.columns]]
-
-            fig = plot_real_prices(df, UNITS, title="Top 15 Global Market Cap — Real Prices")
+            fig = plot_real_prices(
+                df,
+                UNITS,
+                title="Top 15 Global Market Cap — Real Prices",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
@@ -794,14 +787,12 @@ def run_portfolio_page():
             if rolling_beta_series is None or rolling_beta_series.dropna().empty:
                 st.info("Not enough data to compute rolling beta for this configuration.")
             else:
-                
                 beta_fig = plot_rolling_beta(rolling_beta_series, benchmark)
                 st.plotly_chart(beta_fig, use_container_width=True)
 
                 # Latest beta KPI
                 last_beta = rolling_beta_series.dropna().iloc[-1]
                 st.metric("Latest rolling beta", f"{last_beta:.2f}")
-
 
         # -----------------------------
         # TAIL RISK TAB (Pro)
@@ -914,9 +905,6 @@ def run_portfolio_page():
     • <strong>IT10Y=RR</strong> — Italy 10-Year Sovereign Yield (%)<br>
     • <strong>GR10Y=RR</strong> — Greece 10-Year Sovereign Yield (%)<br>
     • <strong>BR10Y=RR</strong> — Brazil 10-Year Sovereign Yield (%)<br><br>
-
-
-
     """,
         unsafe_allow_html=True
     )
