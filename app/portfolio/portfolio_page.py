@@ -106,37 +106,45 @@ PREDEFINED_BASKETS = {
 # -----------------------------
 UNITS = {
     # US equities
-    "AAPL": "USD", "MSFT": "USD", "GOOGL": "USD", "AMZN": "USD",
-    "NVDA": "USD", "META": "USD", "TSLA": "USD", "LLY": "USD",
-    "JPM": "USD", "V": "USD", "BRK-B": "USD", "NVO": "USD",
-    "TSM": "USD",
+    "AAPL": "$", "MSFT": "$", "GOOGL": "$", "AMZN": "$",
+    "NVDA": "$", "META": "$", "TSLA": "$", "LLY": "$",
+    "JPM": "$", "V": "$", "BRK-B": "$", "NVO": "$",
+    "TSM": "$",
 
-    # Index ETFs
-    "SPY": "USD", "^GSPC": "index level", "^FCHI": "index level",
+    # Index ETFs / indices
+    "SPY": "$",
+    "^GSPC": "",       # index level
+    "^FCHI": "",       # index level
 
     # Commodities
-    "GC=F": "USD/oz",      # Gold
-    "BZ=F": "USD/bbl",     # Brent
-    "CL=F": "USD/bbl",     # WTI
+    "GC=F": "oz",      # Gold
+    "BZ=F": "bbl",     # Brent
+    "CL=F": "bbl",     # Oil WTI
 
     # Crypto
-    "BTC-USD": "USD",
-    "ETH-USD": "USD",
+    "BTC-USD": "$",
+    "ETH-USD": "$",
 
-    # Rates
-    "^TNX": "% (yield)",          # 10y Treasury yield
-    "FR10Y=RR": "%", "IT10Y=RR": "%", "GR10Y=RR": "%", "BR10Y=RR": "%",
+    # Rates (10Y)
+    "^TNX": "%",       # US 10-year
+    "FR10Y=RR": "%", 
+    "IT10Y=RR": "%",
+    "GR10Y=RR": "%",
+    "BR10Y=RR": "%",
 
-    # French market
-    "ACA.PA": "EUR", "AIR.PA": "EUR", "MC.PA": "EUR", "OR.PA": "EUR",
-    "TTE.PA": "EUR", "SAN.PA": "EUR",
+    # EUR equities
+    "ACA.PA": "€", "AIR.PA": "€", "MC.PA": "€", 
+    "OR.PA": "€", "TTE.PA": "€", "SAN.PA": "€",
 
-    # Euronext (NL)
-    "ASML.AS": "EUR", "ADYEN.AS": "EUR",
+    # Euronext Netherlands
+    "ASML.AS": "€", "ADYEN.AS": "€",
 
     # China / HK
-    "0700.HK": "HKD", "9988.HK": "HKD", "600519.SS": "CNY",
+    "0700.HK": "HKD",
+    "9988.HK": "HKD",
+    "600519.SS": "CNY",
 }
+
 
 
 def _map_freq_label_to_code(label: str) -> str:
@@ -162,46 +170,28 @@ def _compute_rolling_beta(
     return beta
 
 # -----------------------------
-# Helper: thematic normalized panels
+# Thematic panel — Real price charts with units
 # -----------------------------
 
 def _plot_thematic_panel(prices, tickers, title):
     """
-    Display real-price charts with units for thematic comparison panels.
-    No normalization.
+    Thematic comparison panel using REAL PRICES (no normalization)
+    Shows correctly formatted values (k/M/B) + units ($, €, %, oz...)
     """
 
-    # Sélection des prix
-    df = prices.copy()
-
-    # Filtrer uniquement les tickers sélectionnés
-    df = df[[t for t in tickers if t in df.columns]]
+    # Filtrer uniquement les tickers présents
+    df = prices[[t for t in tickers if t in prices.columns]]
 
     if df.empty:
-        st.warning("No price data available for this panel.")
+        st.warning("No price data available for this thematic panel.")
         return
 
-    # Ajouter les unités dans les labels
-    df_units = {}
-    for col in df.columns:
-        unit = UNITS.get(col, "")
-        df_units[col] = f"{col} ({unit})" if unit else col
-
-    df = df.rename(columns=df_units)
-
-    # Graphique en prix réel
-    fig = px.line(
-        df,
-        title=f"{title} — Real Prices (native units)",
-    )
-
-    fig.update_layout(
-        xaxis_title="Date",
-        yaxis_title="Price / Level (native units)",
-        legend_title="Assets",
-    )
+    # Appel du nouveau graphique prix réel
+    from app.portfolio.plots import plot_real_prices
+    fig = plot_real_prices(df, UNITS, title=title)
 
     st.plotly_chart(fig, use_container_width=True)
+
 
 
 def run_portfolio_page():
@@ -525,6 +515,9 @@ def run_portfolio_page():
             port_cum_fig = plot_cumulative_returns(port_cum)
             st.plotly_chart(port_cum_fig, use_container_width=True)
 
+        # -----------------------------
+        # Thematic comparison panels
+        # -----------------------------
         st.markdown("### Thematic comparison panels")
 
         panel = st.selectbox(
@@ -538,46 +531,59 @@ def run_portfolio_page():
             index=0,
         )
 
+        # -----------------------------
+        # Crypto / Gold / SP500 / NVDA
+        # -----------------------------
         if panel == "Crypto / Gold / SP500 / Nvidia":
-            _plot_thematic_panel(
-                prices,
-                ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"],
-                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia",
-            )
+            tickers = ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"]
 
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # Sovereign Bonds
+        # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
-            _plot_thematic_panel(
-                prices,
-                ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"],
-                title="10Y Government Yields (US, France, Italy, Greece, Brazil)",
-            )
+            tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
 
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="10Y Government Bond Yields — Real Levels")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # Top 3 by Region
+        # -----------------------------
         elif panel == "Top 3 by region (US / CAC40 / Euronext / China)":
-            _plot_thematic_panel(
-                prices,
-                [
-                    # US
-                    "AAPL", "MSFT", "NVDA",
-                    # CAC40
-                    "MC.PA", "OR.PA", "TTE.PA",
-                    # Euronext large caps
-                    "ASML.AS", "ADYEN.AS", "SAN.PA",
-                    # China / HK
-                    "0700.HK", "9988.HK", "600519.SS",
-                ],
-                title="Top 3 per region — US / CAC40 / Euronext / China",
-            )
+            tickers = [
+                "AAPL", "MSFT", "NVDA",           # US
+                "MC.PA", "OR.PA", "TTE.PA",       # CAC40
+                "ASML.AS", "ADYEN.AS", "SAN.PA",  # Euronext
+                "0700.HK", "9988.HK", "600519.SS" # China/HK
+            ]
 
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="Top 3 per Region — Real Prices")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # Top 15 Global Market Cap
+        # -----------------------------
         elif panel == "Top 15 global market cap":
-            _plot_thematic_panel(
-                prices,
-                [
-                    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
-                    "META", "TSM", "LLY", "JPM", "V",
-                    "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
-                ],
-                title="Top 15 companies worldwide (by market cap, approx.)",
-            )
+            tickers = [
+                "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
+                "META", "TSM", "LLY", "JPM", "V",
+                "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
+            ]
+
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="Top 15 Global Market Cap — Real Prices")
+            st.plotly_chart(fig, use_container_width=True)
+
 
 
         # -----------------------------
@@ -692,6 +698,9 @@ def run_portfolio_page():
             port_cum_fig = plot_cumulative_returns(port_cum)
             st.plotly_chart(port_cum_fig, use_container_width=True)
 
+        # -----------------------------
+        # Thematic comparison panels
+        # -----------------------------
         st.markdown("### Thematic comparison panels")
 
         panel = st.selectbox(
@@ -705,46 +714,58 @@ def run_portfolio_page():
             index=0,
         )
 
+        # -----------------------------
+        # Crypto / Gold / SP500 / NVDA
+        # -----------------------------
         if panel == "Crypto / Gold / SP500 / Nvidia":
-            _plot_thematic_panel(
-                prices,
-                ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"],
-                title="Gold, Bitcoin, Ethereum, S&P500, Nvidia",
-            )
+            tickers = ["GC=F", "BTC-USD", "ETH-USD", "SPY", "NVDA"]
 
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # Sovereign Bonds
+        # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
-            _plot_thematic_panel(
-                prices,
-                ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"],
-                title="10Y Government Yields (US, France, Italy, Greece, Brazil)",
-            )
+            tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
 
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="10Y Government Bond Yields — Real Levels")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # Top 3 by Region
+        # -----------------------------
         elif panel == "Top 3 by region (US / CAC40 / Euronext / China)":
-            _plot_thematic_panel(
-                prices,
-                [
-                    # US
-                    "AAPL", "MSFT", "NVDA",
-                    # CAC40
-                    "MC.PA", "OR.PA", "TTE.PA",
-                    # Euronext large caps
-                    "ASML.AS", "ADYEN.AS", "SAN.PA",
-                    # China / HK
-                    "0700.HK", "9988.HK", "600519.SS",
-                ],
-                title="Top 3 per region — US / CAC40 / Euronext / China",
-            )
+            tickers = [
+                "AAPL", "MSFT", "NVDA",           # US
+                "MC.PA", "OR.PA", "TTE.PA",       # CAC40
+                "ASML.AS", "ADYEN.AS", "SAN.PA",  # Euronext
+                "0700.HK", "9988.HK", "600519.SS" # China/HK
+            ]
 
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="Top 3 per Region — Real Prices")
+            st.plotly_chart(fig, use_container_width=True)
+
+        # -----------------------------
+        # Top 15 Global Market Cap
+        # -----------------------------
         elif panel == "Top 15 global market cap":
-            _plot_thematic_panel(
-                prices,
-                [
-                    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
-                    "META", "TSM", "LLY", "JPM", "V",
-                    "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
-                ],
-                title="Top 15 companies worldwide (by market cap, approx.)",
-            )
+            tickers = [
+                "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN",
+                "META", "TSM", "LLY", "JPM", "V",
+                "BRK-B", "NVO", "TSLA", "ASML.AS", "MC.PA",
+            ]
+
+            df = prices[[t for t in tickers if t in prices.columns]]
+
+            fig = plot_real_prices(df, UNITS, title="Top 15 Global Market Cap — Real Prices")
+            st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
         # RISK TAB (Pro)

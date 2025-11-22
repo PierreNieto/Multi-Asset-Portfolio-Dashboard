@@ -52,6 +52,64 @@ def _format_xaxis(fig):
 # PRICE SERIES WITH UNITS IN TOOLTIP
 # =====================================================
 
+
+def _smart_format(v):
+    """Format numeric value with K/M/B."""
+    if v is None:
+        return ""
+    if abs(v) >= 1_000_000_000:
+        return f"{v/1_000_000_000:.2f}B"
+    if abs(v) >= 1_000_000:
+        return f"{v/1_000_000:.2f}M"
+    if abs(v) >= 1_000:
+        return f"{v/1_000:.2f}k"
+    return f"{v:.2f}"
+
+def plot_real_prices(price_df, units, title="Real Price Chart"):
+    """
+    Graphique PRIX RÉELS avec unités adaptées automatiquement.
+    Unité dans la VALUE uniquement.
+    Jamais dans le nom de la série.
+    """
+
+    fig = go.Figure()
+    colors = px.colors.qualitative.Set2
+    color_map = {col: colors[i % len(colors)] for i, col in enumerate(price_df.columns)}
+
+    for col in price_df.columns:
+        unit = units.get(col, "")
+
+        # Format final du hover (ex : 60.8k $)
+        hover_unit = f" {unit}" if unit else ""
+
+        fig.add_trace(
+            go.Scatter(
+                x=price_df.index,
+                y=price_df[col],
+                mode="lines",
+                name=col,  # AUCUNE unité ici
+                line=dict(color=color_map[col], width=2),
+                hovertemplate=(
+                    "<b>%{fullData.name}</b><br>"
+                    "Date = %{x}<br>"
+                    "Value = %{customdata}" + hover_unit +
+                    "<extra></extra>"
+                ),
+                customdata=[_smart_format(v) for v in price_df[col].values],
+            )
+        )
+
+    fig.update_layout(
+        title=title,
+        xaxis_title="Date",
+        yaxis_title="Price / Level (native units)",
+        legend_title="Assets",
+        height=600,
+    )
+
+    return fig
+
+
 def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
     """
     Plot multi-asset price series with correct currency/tooltips.
