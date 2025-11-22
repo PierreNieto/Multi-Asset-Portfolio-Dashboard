@@ -4,6 +4,7 @@
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
+import numpy as np
 
 # Unified date format for the whole dashboard
 DATE_FORMAT = "%d %b %Y"  
@@ -167,14 +168,32 @@ def _format_xaxis(fig):
     return fig
 
 
-def plot_normalized_series(price_df: pd.DataFrame,
-                           title: str = "Normalized Performance (base = 100)") -> go.Figure:
+def plot_normalized_series(
+    price_df: pd.DataFrame,
+    title: str = "Normalized Performance (base = 100)",
+) -> go.Figure:
     """
-    Normalized price comparison (base 100)
-    Tooltip includes only the asset unit (Amundi style).
+    Normalized price comparison (base 100).
+    Each asset is normalized on its own first valid price, so:
+    - assets with shorter history (IPO later) start when data exists
+    - no backward fill is used
+    - no fully-NaN first row that would kill the chart.
     """
 
-    df_norm = price_df / price_df.iloc[0] * 100.0
+    def _normalize_column(col: pd.Series) -> pd.Series:
+        first_valid = col.first_valid_index()
+        if first_valid is None:
+            # column is all NaN -> keep it NaN
+            return col * np.nan
+        base = col.loc[first_valid]
+        if base == 0 or pd.isna(base):
+            # avoid division by zero or NaN
+            return col * np.nan
+        return (col / base) * 100.0
+
+    df_norm = price_df.apply(_normalize_column)
+
+    # Reset index for plotly
     df_norm = df_norm.reset_index().rename(columns={"index": "Date"})
 
     fig = go.Figure()
