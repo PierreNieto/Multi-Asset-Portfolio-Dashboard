@@ -127,29 +127,45 @@ def _compute_rolling_beta(
 # -----------------------------
 # Helper: thematic normalized panels
 # -----------------------------
-def _plot_thematic_panel(prices: pd.DataFrame,
-                         requested_tickers: list[str],
-                         title: str):
-    """
-    Affiche un graphique normalisé (base 100) pour un sous-groupe d'actifs.
 
-    - On ne garde que les tickers présents dans prices.columns.
-    - Si < 2 actifs dispos -> message d’info.
+def _plot_thematic_panel(prices, tickers, title):
     """
-    available = [t for t in requested_tickers if t in prices.columns]
-    if len(available) < 2:
-        st.info(
-            "Not enough of the requested assets are present in your current selection. "
-            "Add them in the sidebar asset list to see this panel."
-        )
+    Display real-price charts with units for thematic comparison panels.
+    No normalization.
+    """
+
+    # Sélection des prix
+    df = prices.copy()
+
+    # Filtrer uniquement les tickers sélectionnés
+    df = df[[t for t in tickers if t in df.columns]]
+
+    if df.empty:
+        st.warning("No price data available for this panel.")
         return
 
-    sub_prices = prices[available]
-    fig = plot_normalized_series(
-        sub_prices,
-        title=f"{title} (base = 100)",
+    # Ajouter les unités dans les labels
+    df_units = {}
+    for col in df.columns:
+        unit = UNITS.get(col, "")
+        df_units[col] = f"{col} ({unit})" if unit else col
+
+    df = df.rename(columns=df_units)
+
+    # Graphique en prix réel
+    fig = px.line(
+        df,
+        title=f"{title} — Real Prices (native units)",
     )
+
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Price / Level (native units)",
+        legend_title="Assets",
+    )
+
     st.plotly_chart(fig, use_container_width=True)
+
 
 def run_portfolio_page():
     st.title("Multi-Asset Portfolio Dashboard")
