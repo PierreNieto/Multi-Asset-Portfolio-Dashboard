@@ -54,6 +54,7 @@ from app.portfolio.metrics import (
 )
 from app.portfolio.plots import (
     plot_price_series,
+    plot_real_prices, 
     plot_cumulative_returns,
     plot_correlation_heatmap,
     plot_rolling_volatility,
