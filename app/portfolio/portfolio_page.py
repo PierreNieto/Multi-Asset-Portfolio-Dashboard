@@ -794,70 +794,37 @@ def run_portfolio_page():
     st.markdown("---")
     st.markdown(
         """
-    ### 📘 Glossary of Symbols & Abbreviations  
+    <hr>
+    <div style="font-size:12px; opacity:0.75; line-height:1.35">
 
-    ---
+    <b>📘 Glossary of Symbols & Units</b><br><br>
 
-    #### **Assets in this dashboard**
+    <b>U.S. Equities & ETFs</b><br>
+    AAPL (USD), MSFT (USD), NVDA (USD), AMZN (USD), GOOGL (USD), META (USD), TSLA (USD),  
+    LLY (USD), BRK-B (USD), JPM (USD), V (USD), SPY (USD)<br><br>
 
-    **U.S. Equities & ETFs**  
-    - **AAPL** — Apple Inc. (USD, Nasdaq)  
-    - **MSFT** — Microsoft (USD, Nasdaq)  
-    - **NVDA** — NVIDIA (USD, Nasdaq)  
-    - **AMZN** — Amazon (USD, Nasdaq)  
-    - **GOOGL** — Alphabet (USD, Nasdaq)  
-    - **META** — Meta Platforms (USD, Nasdaq)  
-    - **TSLA** — Tesla Inc. (USD, Nasdaq)  
-    - **LLY** — Eli Lilly (USD, NYSE)  
-    - **BRK-B** — Berkshire Hathaway Class B (USD, NYSE)  
-    - **JPM** — JPMorgan Chase (USD, NYSE)  
-    - **V** — Visa Inc. (USD, NYSE)  
-    - **SPY** — SPDR S&P 500 ETF (USD)  
+    <b>European Equities</b><br>
+    MC.PA (EUR), OR.PA (EUR), TTE.PA (EUR), ACA.PA (EUR), AIR.PA (EUR), SAN.PA (EUR),  
+    ASML.AS (EUR), ADYEN.AS (EUR)<br><br>
 
-    **European Equities (Euronext & CAC40)**  
-    - **MC.PA** — LVMH (EUR, Paris)  
-    - **OR.PA** — L’Oréal (EUR, Paris)  
-    - **TTE.PA** — TotalEnergies (EUR, Paris)  
-    - **ACA.PA** — Crédit Agricole (EUR, Paris)  
-    - **AIR.PA** — Airbus SE (EUR, Paris)  
-    - **SAN.PA** — Sanofi (EUR, Paris)  
-    - **ASML.AS** — ASML Holding (EUR, Amsterdam)  
-    - **ADYEN.AS** — Adyen NV (EUR, Amsterdam)  
+    <b>Asia / China</b><br>
+    0700.HK (HKD), 9988.HK (HKD), 600519.SS (CNY)<br><br>
 
-    **Asia / China / Hong Kong**  
-    - **0700.HK** — Tencent (HKD, Hong Kong)  
-    - **9988.HK** — Alibaba (HKD, Hong Kong)  
-    - **600519.SS** — Kweichow Moutai (CNY, Shanghai)  
+    <b>Cryptoassets</b><br>
+    BTC-USD ($), ETH-USD ($)<br><br>
 
-    **Cryptoassets**  
-    - **BTC-USD** — Bitcoin (USD)  
-    - **ETH-USD** — Ethereum (USD)  
+    <b>Commodities</b><br>
+    GC=F ($/oz), BZ=F ($/bbl)<br><br>
 
-    **Commodities**  
-    - **GC=F** — Gold Futures (USD/oz)  
-    - **BZ=F** — Brent Crude Oil Futures (USD/bbl)  
+    <b>Sovereign Yields</b><br>
+    ^TNX (%), FR10Y=RR (%), IT10Y=RR (%), GR10Y=RR (%), BR10Y=RR (%)<br><br>
 
-    **Sovereign Yields / Rates**  
-    - **^TNX** — U.S. 10-Year Treasury Yield (%)  
-    - **FR10Y=RR** — French 10-Year Sovereign Yield (%)  
-    - **IT10Y=RR** — Italian 10-Year Sovereign Yield (%)  
-    - **GR10Y=RR** — Greek 10-Year Sovereign Yield (%)  
-    - **BR10Y=RR** — Brazilian 10-Year Sovereign Yield (%)  
+    <b>Main Metrics</b><br>
+    Volatility (%), Drawdown (%), Beta (unitless), Sharpe (unitless),  
+    VaR 5% (% loss threshold), CVaR 5% (mean loss beyond VaR),  
+    Performance Index (base 100)
+    </div>
 
-    ---
-
-    #### **Main Financial Quantities**
-
-    - **Volatility (%)** — annualized standard deviation of returns  
-    - **Drawdown (%)** — percentage drop from a previous peak  
-    - **Beta** — sensitivity of the portfolio relative to a benchmark  
-    - **Sharpe Ratio** — excess return per unit of risk  
-    - **VaR 5%** — worst expected daily loss at a 95% confidence level  
-    - **CVaR 5%** — average loss when returns fall below the VaR threshold  
-    - **Diversification Ratio** — ratio measuring portfolio spread of risk  
-    - **Performance Index (base 100)** — normalized price index for comparability  
-
-    ---
 
 
     """,
