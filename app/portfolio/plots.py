@@ -66,14 +66,34 @@ def _smart_format(v):
         return f"{v/1_000:.2f}k"
     return f"{v:.2f}"
 
+def fill_missing_with_zero_until_first_valid(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    For each column:
+    - Before first valid price → fill with 0
+    - After → keep real prices
+    This ensures assets with later IPO still appear on charts starting at 0.
+    """
+    df = df.copy()
+    for col in df.columns:
+        first_valid = df[col].first_valid_index()
+        if first_valid is not None:
+            df.loc[:first_valid, col] = df[col].loc[:first_valid].fillna(0)
+        else:
+            # If column is 100% NaN, fill entire column with 0
+            df[col] = 0
+    return df
+
+
 def plot_real_prices(price_df, units, title="Real Price Chart"):
     """
     Graphique PRIX RÉELS avec unités adaptées automatiquement.
     Unité dans la VALUE uniquement.
     Jamais dans le nom de la série.
     """
-
+    # Convert NaN histories to 0 until first valid value
+    price_df = fill_missing_with_zero_until_first_valid(price_df)
     fig = go.Figure()
+
     colors = px.colors.qualitative.Set2
     color_map = {col: colors[i % len(colors)] for i, col in enumerate(price_df.columns)}
 
