@@ -101,6 +101,43 @@ PREDEFINED_BASKETS = {
     ],
 }
 
+# -----------------------------
+# Units for each asset
+# -----------------------------
+UNITS = {
+    # US equities
+    "AAPL": "USD", "MSFT": "USD", "GOOGL": "USD", "AMZN": "USD",
+    "NVDA": "USD", "META": "USD", "TSLA": "USD", "LLY": "USD",
+    "JPM": "USD", "V": "USD", "BRK-B": "USD", "NVO": "USD",
+    "TSM": "USD",
+
+    # Index ETFs
+    "SPY": "USD", "^GSPC": "index level", "^FCHI": "index level",
+
+    # Commodities
+    "GC=F": "USD/oz",      # Gold
+    "BZ=F": "USD/bbl",     # Brent
+    "CL=F": "USD/bbl",     # WTI
+
+    # Crypto
+    "BTC-USD": "USD",
+    "ETH-USD": "USD",
+
+    # Rates
+    "^TNX": "% (yield)",          # 10y Treasury yield
+    "FR10Y=RR": "%", "IT10Y=RR": "%", "GR10Y=RR": "%", "BR10Y=RR": "%",
+
+    # French market
+    "ACA.PA": "EUR", "AIR.PA": "EUR", "MC.PA": "EUR", "OR.PA": "EUR",
+    "TTE.PA": "EUR", "SAN.PA": "EUR",
+
+    # Euronext (NL)
+    "ASML.AS": "EUR", "ADYEN.AS": "EUR",
+
+    # China / HK
+    "0700.HK": "HKD", "9988.HK": "HKD", "600519.SS": "CNY",
+}
+
 
 def _map_freq_label_to_code(label: str) -> str:
     """Map UI frequency label to pandas resample code."""
