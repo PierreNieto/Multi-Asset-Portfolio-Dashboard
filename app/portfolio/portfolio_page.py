@@ -326,7 +326,7 @@ def run_portfolio_page():
         prices = prices.to_frame()
 
     # Rectangularize price data (per-asset history is preserved by index)
-    prices = prices.sort_index().ffill().bfill()
+    prices = prices.sort_index().ffill()
 
     # Maybe resample if needed
     freq_code = _map_freq_label_to_code(freq_label)
@@ -355,14 +355,14 @@ def run_portfolio_page():
         union_index = union_index.sort_values()
 
         # Reindex prices on the union index and fill gaps
-        prices = prices.reindex(union_index).ffill().bfill()
+        prices = prices.reindex(union_index).ffill()
 
         # Reindex each macro series on the same union index
         macro_data_aligned = {}
         for key, df in macro_data.items():
             if df.empty:
                 continue
-            aligned_df = df.reindex(union_index).ffill().bfill()
+            aligned_df = df.reindex(union_index).ffill()
             macro_data_aligned[key] = aligned_df
     else:
         macro_data_aligned = {}
