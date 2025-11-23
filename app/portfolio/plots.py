@@ -14,19 +14,46 @@ DATE_FORMAT = "%d %b %Y"  # unified date format for the whole dashboard
 
 
 def _format_xaxis(fig: go.Figure) -> go.Figure:
-    """Uniform x-axis formatting for all charts."""
+    """Uniform x-axis formatting for all charts + adaptive date range.
+
+    The adaptive range only considers x-values where the corresponding y
+    is not NaN / None, so purely-empty periods (all-NaN) do not extend
+    the visible timeline.
+    """
+    # Standard visual formatting
     fig.update_xaxes(
         tickformat=DATE_FORMAT,
         ticks="outside",
         ticklabelmode="period",
     )
-    # adaptive range
-    xs=[]
+
+    # Adaptive range based on non-null data points
+    xs = []
     for tr in fig.data:
-        if hasattr(tr,'x') and tr.x is not None:
-            xs+=list(pd.to_datetime(tr.x))
+        x = getattr(tr, "x", None)
+        y = getattr(tr, "y", None)
+
+        if x is None or y is None:
+            continue
+
+        # x and y should have the same length; we only keep dates
+        # where y is not None / not NaN.
+        for xi, yi in zip(x, y):
+            if yi is None:
+                continue
+            try:
+                val = float(yi)
+                if math.isnan(val):
+                    continue
+            except (TypeError, ValueError):
+                # Non-numeric (e.g. categorical) y: keep the point
+                pass
+
+            xs.append(pd.to_datetime(xi))
+
     if xs:
-        fig.update_xaxes(range=[min(xs),max(xs)])
+        fig.update_xaxes(range=[min(xs), max(xs)])
+
     return fig
 
 
