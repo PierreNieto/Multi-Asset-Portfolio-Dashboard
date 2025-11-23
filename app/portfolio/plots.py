@@ -20,6 +20,13 @@ def _format_xaxis(fig: go.Figure) -> go.Figure:
         ticks="outside",
         ticklabelmode="period",
     )
+    # adaptive range
+    xs=[]
+    for tr in fig.data:
+        if hasattr(tr,'x') and tr.x is not None:
+            xs+=list(pd.to_datetime(tr.x))
+    if xs:
+        fig.update_xaxes(range=[min(xs),max(xs)])
     return fig
 
 
