@@ -135,7 +135,9 @@ def plot_real_prices(price_df: pd.DataFrame, units: dict, title: str = "Real Pri
     - Full-history assets keep their true prices from the start.
     - Late-IPO assets are displayed at 0 before IPO, then with real prices.
     """
-    price_df = fill_missing_with_zero_until_first_valid(price_df)
+    # Trim leading all-NaN rows for macro series
+    price_df = price_df.loc[price_df.notna().any(axis=1)]
+
 
     fig = go.Figure()
     colors = px.colors.qualitative.Set2
