@@ -51,7 +51,6 @@ DEFAULT_TICKERS = [
     "ETH-USD",
 ]
 
-
 # -------------------------------------------------------------------
 # Helper function: download with auto-retry
 # -------------------------------------------------------------------
@@ -64,9 +63,7 @@ def _safe_download(ticker, **kwargs):
                 return df
         except Exception:
             pass
-
-        time.sleep(1.0)  # wait and retry
-
+        time.sleep(1.0)
     return pd.DataFrame()
 
 
@@ -80,8 +77,8 @@ def load_multi_asset_data(
 ):
     """
     Load multiple assets with mixed frequencies:
-      - Crypto (BTC & ETH) -> 5m interval
-      - Other assets -> 1d interval
+      - Crypto (BTC & ETH) -> 5m interval (max 60d range)
+      - Other assets -> 1d interval since 2015
     Then resample everything to daily and align cleanly.
     """
 
@@ -95,8 +92,7 @@ def load_multi_asset_data(
         if ticker in ["BTC-USD", "ETH-USD"]:
             df = _safe_download(
                 ticker,
-                start=start,
-                end=end,
+                period="60d",
                 interval="5m",
             )
         else:
@@ -120,12 +116,9 @@ def load_multi_asset_data(
             else:
                 s = df["Close"]
 
-            # For BTc/ETH (single asset) s is df[col] -> series
-            if isinstance(s, pd.DataFrame):
-                # Take the single column inside
+            if isinstance(s, pd.DataFrame):  # ex: df["Adj Close"] returns DataFrame
                 col = s.columns[0]
                 series = s[col]
-
             else:
                 series = s
 
@@ -145,7 +138,7 @@ def load_multi_asset_data(
             .ffill()
         )
 
-        # Force ticker name as column
+        # Force ticker name
         all_series[ticker] = series.rename(ticker)
 
     # -------------------------------------------------------------------
@@ -155,8 +148,6 @@ def load_multi_asset_data(
         raise ValueError("ERROR: No assets could be loaded.")
 
     final_df = pd.concat(all_series.values(), axis=1)
-
-    # Drop rows where ALL values are missing
     final_df = final_df.dropna(how="all")
 
     return final_df
