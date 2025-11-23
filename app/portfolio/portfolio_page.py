@@ -453,17 +453,9 @@ def run_portfolio_page():
         end=port_norm.index[-1]
     )
 
-    # Handle Close / Adj Close
-    benchmark_prices = (
-        bench_df["Close"]
-        if "Close" in bench_df.columns
-        else bench_df["Adj Close"]
-    )
-
-    # Align benchmark to portfolio index
+    benchmark_prices = bench_df.get("Close", bench_df.get("Adj Close"))
     benchmark_prices = benchmark_prices.reindex(port_norm.index).ffill()
 
-    # Normalize benchmark to base 1
     bench_norm = benchmark_prices / benchmark_prices.iloc[0]
 
 
