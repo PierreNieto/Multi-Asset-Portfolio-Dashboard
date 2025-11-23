@@ -8,6 +8,7 @@ Created on Thu Nov 20 17:41:06 2025
 
 import yfinance as yf
 import pandas as pd
+import time
 
 DEFAULT_TICKERS = [
     # Core equity indices / ETFs / US megacaps
@@ -51,34 +52,111 @@ DEFAULT_TICKERS = [
 ]
 
 
-def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None):
-    data = yf.download(
-        tickers,
-        start=start,
-        end=end,
-        progress=False,
-        auto_adjust=False,
-        interval="1d",
-    )
+# -------------------------------------------------------------------
+# Helper function: download with auto-retry
+# -------------------------------------------------------------------
+def _safe_download(ticker, **kwargs):
+    """Download ticker with retry logic to avoid API failures."""
+    for attempt in range(3):
+        try:
+            df = yf.download(ticker, progress=False, auto_adjust=False, **kwargs)
+            if not df.empty:
+                return df
+        except Exception:
+            pass
 
-    # yfinance returns a MultiIndex for multiple tickers:
-    # ('Adj Close', 'AAPL'), ('Adj Close', 'SPY') ...
-    if isinstance(data.columns, pd.MultiIndex):
-        # Keep only Adj Close level
-        if "Adj Close" in data.columns.levels[0]:
-            data = data["Adj Close"]
+        time.sleep(1.0)  # wait and retry
+
+    return pd.DataFrame()
+
+
+# -------------------------------------------------------------------
+# Main loader
+# -------------------------------------------------------------------
+def load_multi_asset_data(
+    tickers=DEFAULT_TICKERS,
+    start="2015-01-01",
+    end=None,
+):
+    """
+    Load multiple assets with mixed frequencies:
+      - Crypto (BTC & ETH) -> 5m interval
+      - Other assets -> 1d interval
+    Then resample everything to daily and align cleanly.
+    """
+
+    all_series = {}
+
+    for ticker in tickers:
+
+        # ------------------------------------------
+        # 1) Choose interval based on asset type
+        # ------------------------------------------
+        if ticker in ["BTC-USD", "ETH-USD"]:
+            df = _safe_download(
+                ticker,
+                start=start,
+                end=end,
+                interval="5m",
+            )
         else:
-            # fallback : take Close
-            data = data["Close"]
+            df = _safe_download(
+                ticker,
+                start=start,
+                end=end,
+                interval="1d",
+            )
 
-        # Flatten columns
-        data.columns = [col for col in data.columns]
+        if df.empty:
+            print(f"[WARN] Could not download {ticker}")
+            continue
 
-    # Ensure DataFrame for single asset
-    if isinstance(data, pd.Series):
-        data = data.to_frame()
+        # ------------------------------------------
+        # 2) Extract Adj Close or fallback to Close
+        # ------------------------------------------
+        if isinstance(df.columns, pd.MultiIndex):
+            if "Adj Close" in df.columns.levels[0]:
+                s = df["Adj Close"]
+            else:
+                s = df["Close"]
 
-    # Clean missing rows (keep full rows only)
-    data = data.dropna(how="any")
+            # For BTc/ETH (single asset) s is df[col] -> series
+            if isinstance(s, pd.DataFrame):
+                # Take the single column inside
+                col = s.columns[0]
+                series = s[col]
 
-    return data
+            else:
+                series = s
+
+        else:
+            if "Adj Close" in df.columns:
+                series = df["Adj Close"]
+            else:
+                series = df["Close"]
+
+        # ------------------------------------------
+        # 3) Resample to daily
+        # ------------------------------------------
+        series = (
+            series
+            .resample("1D")
+            .last()
+            .ffill()
+        )
+
+        # Force ticker name as column
+        all_series[ticker] = series.rename(ticker)
+
+    # -------------------------------------------------------------------
+    # 4) Concatenate and final clean
+    # -------------------------------------------------------------------
+    if not all_series:
+        raise ValueError("ERROR: No assets could be loaded.")
+
+    final_df = pd.concat(all_series.values(), axis=1)
+
+    # Drop rows where ALL values are missing
+    final_df = final_df.dropna(how="all")
+
+    return final_df

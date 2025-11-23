@@ -235,6 +235,12 @@ def run_portfolio_page():
         "risk–return analysis across equities, rates, commodities and crypto."
     )
 
+    # -------------------------------------------------
+    # Auto-refresh every 5 minutes (300,000 ms)
+    # -------------------------------------------------
+    from streamlit_autorefresh import st_autorefresh
+    st_autorefresh(interval=5 * 60 * 1000)  # 5 minutes
+
     # -----------------------------
     # Sidebar controls
     # -----------------------------
