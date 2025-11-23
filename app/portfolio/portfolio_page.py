@@ -446,39 +446,46 @@ def run_portfolio_page():
     # -----------------------------
     # Benchmark download + alignment
     # -----------------------------
-    # We use yfinance.Ticker().history() because:
-    # - faster than yf.download
-    # - more reliable
-    # - avoids empty DataFrames
-    # - avoids repeated network calls
-    # - clean "Close" handling
+    start_str = port_norm.index[0].strftime("%Y-%m-%d")
+    end_str   = port_norm.index[-1].strftime("%Y-%m-%d")
 
     ticker_obj = yf.Ticker(benchmark)
 
     hist = ticker_obj.history(
-        start=port_norm.index[0],
-        end=port_norm.index[-1]
+        start=start_str,
+        end=end_str
     )
+    # DEBUG BLOCK — Print everything about benchmark
+    #st.write("=== DEBUG: Benchmark raw history ===")
+    #st.write(hist.head())
+    #st.write(hist.tail())
+    #st.write("Hist shape:", hist.shape)
+    #st.write("Hist columns:", hist.columns.tolist())
 
-    # Try Close then Adj Close
+    # Extract price
     if "Close" in hist.columns:
         benchmark_prices = hist["Close"]
     elif "Adj Close" in hist.columns:
         benchmark_prices = hist["Adj Close"]
     else:
-        # Fallback: use first numeric column
         numeric_cols = hist.select_dtypes(include=[np.number]).columns
         if len(numeric_cols) == 0:
             st.error("Benchmark price series not available.")
             return
         benchmark_prices = hist[numeric_cols[0]]
 
-    # Align on portfolio index
+    # Remove timezone so dates match portfolio index
+    benchmark_prices.index = benchmark_prices.index.tz_localize(None)
+
+    #st.write("=== DEBUG: benchmark_prices (raw) ===")
+    #st.write(benchmark_prices.head())
+    #st.write(benchmark_prices.tail())
+
+    # Align to portfolio index
     benchmark_prices = benchmark_prices.reindex(port_norm.index).ffill()
 
     # Normalize benchmark to base 1
     bench_norm = benchmark_prices / benchmark_prices.iloc[0]
-
 
     # --- corr matrix ---
     corr_mat = correlation_matrix(asset_returns)
@@ -574,6 +581,8 @@ def run_portfolio_page():
                 title="Global Performance Index (base = 100)",
             )
             st.plotly_chart(price_fig, use_container_width=True)
+
+     
 
             port_cum_fig = plot_cumulative_returns(
             port_norm,
