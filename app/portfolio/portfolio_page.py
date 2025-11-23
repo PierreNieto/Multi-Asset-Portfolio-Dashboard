@@ -667,7 +667,12 @@ def run_portfolio_page():
             else:
                 for name, df in macro_data_aligned.items():
                     st.write(f"### {name}")
-                    st.line_chart(df, height=200, use_container_width=True)
+
+                    fig = plot_real_prices(df, UNITS, title=name)
+                    fig = _format_xaxis(fig, start_date)
+
+                    st.plotly_chart(fig, use_container_width=True)
+
 
     # =====================================================
     # MODE PRO
@@ -935,7 +940,13 @@ def run_portfolio_page():
             else:
                 for name, df in macro_data_aligned.items():
                     st.write(f"### {name}")
-                    st.line_chart(df, height=200, use_container_width=True)
+
+                    fig = plot_real_prices(df, UNITS, title=name)
+
+                    fig = _format_xaxis(fig, start_date)
+
+                    st.plotly_chart(fig, use_container_width=True)
+
 
     # -----------------------------
     # FOOTER — Glossary 

@@ -14,7 +14,7 @@ import math
 DATE_FORMAT = "%d %b %Y"  # unified date format for the whole dashboard
 
 
-def _format_xaxis(fig: go.Figure) -> go.Figure:
+def _format_xaxis(fig: go.Figure, start_date=None) -> go.Figure:
     """Uniform x-axis formatting for all charts + adaptive date range.
 
     The adaptive range only considers x-values where the corresponding y
@@ -55,6 +55,23 @@ def _format_xaxis(fig: go.Figure) -> go.Figure:
     if xs:
         fig.update_xaxes(range=[min(xs), max(xs)])
 
+    # Adaptive range with optional start_date override
+    xs=[]
+    for tr in fig.data:
+        x=getattr(tr,'x',None); y=getattr(tr,'y',None)
+        if x is None or y is None: continue
+        for xi, yi in zip(x,y):
+            if yi is None: continue
+            try:
+                v=float(yi)
+                if math.isnan(v): continue
+            except: pass
+            xs.append(pd.to_datetime(xi))
+    if xs:
+        min_x, max_x = min(xs), max(xs)
+        if start_date is not None:
+            min_x = pd.to_datetime(start_date)
+        fig.update_xaxes(range=[min_x, max_x])
     return fig
 
 
