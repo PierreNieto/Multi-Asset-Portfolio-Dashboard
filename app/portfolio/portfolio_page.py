@@ -62,18 +62,7 @@ from app.portfolio.plots import (
     plot_drawdown,            
     plot_efficient_frontier,
     plot_normalized_series,
-    from app.portfolio.plots import (
-    plot_price_series,
-    plot_real_prices, 
-    plot_cumulative_returns,
-    plot_correlation_heatmap,
-    plot_rolling_volatility,
-    plot_rolling_beta,       
-    plot_drawdown,            
-    plot_efficient_frontier,
-    plot_normalized_series, 
-    _format_xaxis,       
- 
+    _format_xaxis, 
 )
 from app.portfolio.macro_loader import load_macro_data
 
