@@ -243,69 +243,15 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
 # NORMALIZED PERFORMANCE (BASE 100)
 # =====================================================
 
-def plot_normalized_series(
-    price_df: pd.DataFrame,
-    title: str = "Normalized Performance (base = 100)",
-) -> go.Figure:
-    """
-    Normalized price comparison (base 100).
-    Each asset is normalized on its own first valid price, so:
-    - assets with shorter history (IPO later) start when data exists
-    - no backward fill is used
-    - no fully-NaN first row that would kill the chart.
-    """
-
-    def _normalize_column(col: pd.Series) -> pd.Series:
-        first_valid = col.first_valid_index()
-        if first_valid is None:
-            return col * np.nan
-        base = col.loc[first_valid]
-        if base == 0 or pd.isna(base):
-            return col * np.nan
-        return (col / base) * 100.0
-
-    df_norm = price_df.apply(_normalize_column)
-
-    df_norm = df_norm.reset_index().rename(columns={"index": "Date"})
-
-    fig = go.Figure()
-
-    for asset in price_df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df_norm["Date"],
-                y=df_norm[asset],
-                mode="lines",
-                name=asset,
-                hovertemplate=(
-                    f"<b>{asset}</b><br>"
-                    "Date: %{x|%d %b %Y}<br>"
-                    "Performance Index: %{y:.2f}<br>"
-                    f"Unit: {_unit_for_asset(asset)}"
-                    "<extra></extra>"
-                ),
-            )
-        )
-
-    fig.update_layout(
-        title=title,
-        xaxis_title="Date",
-        yaxis_title="Performance Index (base = 100)",
-        legend_title="Assets",
-    )
-
-    return _format_xaxis(fig)
-
-
-# =====================================================
-# CUMULATIVE RETURNS (unit: base 1.0)
-# =====================================================
-
 def plot_cumulative_returns(
     cum_series: pd.Series,
     bench_cum: pd.Series = None,
     bench_name: str = "Benchmark",
 ) -> go.Figure:
+    """
+    Plot cumulative returns with optional benchmark.
+    No shading is used to ensure full visibility of both curves.
+    """
 
     fig = go.Figure()
 
@@ -315,87 +261,27 @@ def plot_cumulative_returns(
     if bench_cum is not None:
         bench_cum = bench_cum.reindex(cum_series.index).ffill()
 
-    port = cum_series.values
-    idx = cum_series.index
-
-    # ====================================================
-    # 1) BENCHMARK FIRST (always behind everything)
-    # ====================================================
-    if bench_cum is not None:
-        bench = bench_cum.values
-
-        fig.add_trace(go.Scatter(
-            x=idx,
-            y=bench,
-            mode="lines",
-            name=bench_name,
-            line=dict(width=2, dash="dash", color="#4c78a8"),
-        ))
-
-    # ====================================================
-    # 2) PORTFOLIO SECOND (always on top of benchmark)
-    # ====================================================
+    # ----------------------------------------------------
+    # Portfolio curve (always visible)
+    # ----------------------------------------------------
     fig.add_trace(go.Scatter(
-        x=idx,
-        y=port,
+        x=cum_series.index,
+        y=cum_series.values,
         mode="lines",
         name="Portfolio",
         line=dict(width=3, color="#72b7b2"),
     ))
 
-    # ====================================================
-    # 3) SHADING (drawn after curves, but visually behind)
-    # ====================================================
+    # ----------------------------------------------------
+    # Benchmark curve (drawn second, dashed)
+    # ----------------------------------------------------
     if bench_cum is not None:
-        bench = bench_cum.values
-
-        # Outperformance mask (green zones)
-        out_mask = port > bench
-        y_upper = np.maximum(port, bench)
-        y_lower = np.minimum(port, bench)
-
-        # --- Green shading (Portfolio > Benchmark) ---
         fig.add_trace(go.Scatter(
-            x=idx,
-            y=np.where(out_mask, y_upper, np.nan),
-            fill=None,
+            x=bench_cum.index,
+            y=bench_cum.values,
             mode="lines",
-            line=dict(width=0),
-            showlegend=False,
-            hoverinfo="skip",
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=idx,
-            y=np.where(out_mask, y_lower, np.nan),
-            fill="tonexty",
-            fillcolor="rgba(0,200,0,0.25)",
-            name="Outperformance",
-            hoverinfo="skip",
-            line=dict(width=0),
-        ))
-
-        # --- Red shading (Portfolio < Benchmark) ---
-        under_mask = port < bench
-
-        fig.add_trace(go.Scatter(
-            x=idx,
-            y=np.where(under_mask, y_upper, np.nan),
-            fill=None,
-            mode="lines",
-            line=dict(width=0),
-            showlegend=False,
-            hoverinfo="skip",
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=idx,
-            y=np.where(under_mask, y_lower, np.nan),
-            fill="tonexty",
-            fillcolor="rgba(255,0,0,0.25)",
-            name="Underperformance",
-            hoverinfo="skip",
-            line=dict(width=0),
+            name=bench_name,
+            line=dict(width=2, dash="dash", color="#4c78a8"),
         ))
 
     # ----------------------------------------------------
@@ -417,6 +303,7 @@ def plot_cumulative_returns(
     )
 
     return _format_xaxis(fig)
+
 
 
 # =====================================================
