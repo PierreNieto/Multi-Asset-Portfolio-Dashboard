@@ -940,10 +940,10 @@ def run_portfolio_page():
 
     <!-- Sovereign Yields & Rates -->
     • <strong>^TNX</strong> — U.S. 10-Year Treasury Yield (%)<br>
-    • <strong>FR10Y=RR</strong> — France 10-Year Sovereign Yield (%)<br>
-    • <strong>IT10Y=RR</strong> — Italy 10-Year Sovereign Yield (%)<br>
-    • <strong>GR10Y=RR</strong> — Greece 10-Year Sovereign Yield (%)<br>
-    • <strong>BR10Y=RR</strong> — Brazil 10-Year Sovereign Yield (%)<br><br>
+    • <strong>FR10Y</strong> — France 10-Year Sovereign Yield (%)<br>
+    • <strong>IT10Y</strong> — Italy 10-Year Sovereign Yield (%)<br>
+    • <strong>DE10Y</strong> — Germany 10-Year Sovereign Yield (%)<br>
+    • <strong>BR10Y</strong> — Brazil 10-Year Sovereign Yield (%)<br><br>
     """,
         unsafe_allow_html=True
     )

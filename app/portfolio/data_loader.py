@@ -51,10 +51,10 @@ DEFAULT_TICKERS = [
 
     # Rates / sovereign yields (à ajuster selon ce que supporte Yahoo)
     "^TNX",         # US 10Y
-    "FR10Y=RR",     # France 10Y (si dispo)
-    "IT10Y=RR",     # Italy 10Y
-    "GR10Y=RR",     # Greece 10Y
-    "BR10Y=RR",     # Brazil 10Y
+    "FR10Y.BOND",     # France 10Y 
+    "IT10Y.BOND",     # Italy 10Y
+    "DE10Y.BOND",     # germany 10Y
+    "BZ10Y.BOND",     # Brazil 10Y
 ]
 
 
