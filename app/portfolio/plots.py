@@ -309,75 +309,98 @@ def plot_cumulative_returns(
 
     fig = go.Figure()
 
-    # --- Aligner benchmark ---
+    # ----------------------------------------------------
+    # Align benchmark on portfolio index
+    # ----------------------------------------------------
     if bench_cum is not None:
         bench_cum = bench_cum.reindex(cum_series.index).ffill()
 
-    # --- Tracer les courbes en premier (toujours au-dessus des zones) ---
-    fig.add_trace(go.Scatter(
-        x=cum_series.index,
-        y=cum_series.values,
-        mode="lines",
-        name="Portfolio",
-        line=dict(width=3),
-    ))
+    port = cum_series.values
+    idx = cum_series.index
 
+    # ====================================================
+    # 1) BENCHMARK FIRST (always behind everything)
+    # ====================================================
     if bench_cum is not None:
+        bench = bench_cum.values
+
         fig.add_trace(go.Scatter(
-            x=bench_cum.index,
-            y=bench_cum.values,
+            x=idx,
+            y=bench,
             mode="lines",
             name=bench_name,
-            line=dict(width=2, dash="dash"),
+            line=dict(width=2, dash="dash", color="#4c78a8"),
         ))
 
-        # ----- Shading (dessiné APRES les courbes) -----
+    # ====================================================
+    # 2) PORTFOLIO SECOND (always on top of benchmark)
+    # ====================================================
+    fig.add_trace(go.Scatter(
+        x=idx,
+        y=port,
+        mode="lines",
+        name="Portfolio",
+        line=dict(width=3, color="#72b7b2"),
+    ))
 
-        port = cum_series.values
+    # ====================================================
+    # 3) SHADING (drawn after curves, but visually behind)
+    # ====================================================
+    if bench_cum is not None:
         bench = bench_cum.values
-        idx = cum_series.index
 
-        # zone verte
+        # Outperformance mask (green zones)
+        out_mask = port > bench
+        y_upper = np.maximum(port, bench)
+        y_lower = np.minimum(port, bench)
+
+        # --- Green shading (Portfolio > Benchmark) ---
         fig.add_trace(go.Scatter(
             x=idx,
-            y=np.maximum(port, bench),
+            y=np.where(out_mask, y_upper, np.nan),
+            fill=None,
             mode="lines",
             line=dict(width=0),
             showlegend=False,
             hoverinfo="skip",
         ))
+
         fig.add_trace(go.Scatter(
             x=idx,
-            y=np.minimum(port, bench),
-            mode="lines",
-            line=dict(width=0),
+            y=np.where(out_mask, y_lower, np.nan),
             fill="tonexty",
-            fillcolor="rgba(0,200,0,0.2)",
-            name="Outperformance" if (port > bench).any() else "",
+            fillcolor="rgba(0,200,0,0.25)",
+            name="Outperformance",
             hoverinfo="skip",
+            line=dict(width=0),
         ))
 
-        # zone rouge
+        # --- Red shading (Portfolio < Benchmark) ---
+        under_mask = port < bench
+
         fig.add_trace(go.Scatter(
             x=idx,
-            y=np.minimum(port, bench),
+            y=np.where(under_mask, y_upper, np.nan),
+            fill=None,
             mode="lines",
             line=dict(width=0),
             showlegend=False,
             hoverinfo="skip",
         ))
+
         fig.add_trace(go.Scatter(
             x=idx,
-            y=np.maximum(port, bench),
-            mode="lines",
-            line=dict(width=0),
+            y=np.where(under_mask, y_lower, np.nan),
             fill="tonexty",
-            fillcolor="rgba(255,0,0,0.2)",
-            name="Underperformance" if (port < bench).any() else "",
+            fillcolor="rgba(255,0,0,0.25)",
+            name="Underperformance",
             hoverinfo="skip",
+            line=dict(width=0),
         ))
 
-    # Base = 1
+    # ----------------------------------------------------
+    # Base = 1 reference line
+    # ----------------------------------------------------
     fig.add_hline(
         y=1,
         line=dict(color="white", width=1, dash="dot"),
@@ -394,7 +417,6 @@ def plot_cumulative_returns(
     )
 
     return _format_xaxis(fig)
-
 
 
 # =====================================================
