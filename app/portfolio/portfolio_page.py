@@ -435,6 +435,23 @@ def run_portfolio_page():
         port_ret = port_ret.iloc[:, 0]
 
     port_cum = cumulative_returns(port_ret)
+
+    # --- Benchmark for cumulative comparison ---
+    import yfinance as yf
+
+    benchmark_prices = yf.download(
+        benchmark,
+        start=port_cum.index[0],
+        end=port_cum.index[-1]
+    )["Close"]
+
+    # Align benchmark to portfolio index
+    benchmark_prices = benchmark_prices.reindex(port_cum.index).ffill()
+
+    # --- Normalize both portfolio and benchmark to BASE = 1 ---
+    port_norm = port_cum / port_cum.iloc[0]
+    bench_norm = benchmark_prices / benchmark_prices.iloc[0]
+
     corr_mat = correlation_matrix(asset_returns)
 
     # annualization factor
@@ -529,7 +546,12 @@ def run_portfolio_page():
             )
             st.plotly_chart(price_fig, use_container_width=True)
 
-            port_cum_fig = plot_cumulative_returns(port_cum)
+            port_cum_fig = plot_cumulative_returns(
+            port_norm,
+            bench_cum=bench_norm,
+            bench_name=benchmark
+            )
+
             st.plotly_chart(port_cum_fig, use_container_width=True)
 
         # -----------------------------
@@ -748,7 +770,12 @@ def run_portfolio_page():
             )
             st.plotly_chart(price_fig, use_container_width=True)
 
-            port_cum_fig = plot_cumulative_returns(port_cum)
+            port_cum_fig = plot_cumulative_returns(
+            port_norm,
+            bench_cum=bench_norm,
+            bench_name=benchmark
+            )
+
             st.plotly_chart(port_cum_fig, use_container_width=True)
 
         # -----------------------------

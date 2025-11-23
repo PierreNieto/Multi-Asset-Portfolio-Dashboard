@@ -301,13 +301,85 @@ def plot_normalized_series(
 # CUMULATIVE RETURNS (unit: base 1.0)
 # =====================================================
 
-def plot_cumulative_returns(cum_series: pd.Series) -> go.Figure:
-    fig = px.line(cum_series, title="Portfolio Cumulative Returns")
-    fig.update_layout(
-        xaxis_title="Date",
-        yaxis_title="Cumulative Value (base = 1.0)",
-        showlegend=False,
+def plot_cumulative_returns(cum_series: pd.Series, bench_cum: pd.Series = None, bench_name: str = "Benchmark") -> go.Figure:
+    """
+    Plot cumulative returns base=1 with benchmark comparison and shaded zones
+    showing over- and under-performance.
+    """
+
+    fig = go.Figure()
+
+    # --- Portfolio curve ---
+    fig.add_trace(
+        go.Scatter(
+            x=cum_series.index,
+            y=cum_series.values,
+            mode="lines",
+            name="Portfolio",
+            line=dict(width=3)
+        )
     )
+
+    # --- Benchmark curve ---
+    if bench_cum is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=bench_cum.index,
+                y=bench_cum.values,
+                mode="lines",
+                name=bench_name,
+                line=dict(width=2, dash="dash")
+            )
+        )
+
+        # -----------------------------------
+        # SHADED AREAS: Portfolio - Benchmark
+        # -----------------------------------
+
+        diff = cum_series - bench_cum
+
+        # --- Surperformance (green) ---
+        fig.add_trace(go.Scatter(
+            x=cum_series.index,
+            y=np.where(diff > 0, diff, 0),
+            fill='tozeroy',
+            mode='none',
+            fillcolor='rgba(0, 200, 0, 0.15)',   # soft green
+            name="Outperformance zone"
+        ))
+
+        # --- Sous-performance (red) ---
+        fig.add_trace(go.Scatter(
+            x=cum_series.index,
+            y=np.where(diff < 0, diff, 0),
+            fill='tozeroy',
+            mode='none',
+            fillcolor='rgba(255, 0, 0, 0.15)',   # soft red
+            name="Underperformance zone"
+        ))
+
+    # --- Horizontal reference line (base 1) ---
+    fig.add_hline(
+        y=1.0,
+        line=dict(color="black", width=1, dash="dot"),
+        annotation_text="Base = 1.0",
+        annotation_position="top left"
+    )
+
+    fig.update_layout(
+        title="Portfolio vs Benchmark — Cumulative Performance (base = 1)",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Value (base = 1)",
+        hovermode="x unified",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0
+        )
+    )
+
     return _format_xaxis(fig)
 
 
