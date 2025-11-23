@@ -1,59 +1,54 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
-Macro Loader Module (Enhanced)
---------------------------------
+Macro Loader Module
+--------------------
 Loads macroeconomic indicators from FRED using pandas_datareader.
 
-- Robust retry logic (no crash if FRED is down)
-- Clean, consistent interface
-- Daily or quarterly macro series
+Includes:
+- US CPI inflation
+- US Real Yield (10Y)
+- Sovereign 10Y Yields (US, France, Germany, Italy)
+- GDP (US, France)
 """
 
 import pandas as pd
-import time
 import pandas_datareader.data as web
 
 
 # ---------------------------------------------------------
-# Safe loader with retry
+# Helper function
 # ---------------------------------------------------------
-def _safe_fred_load(series_code, col_name, start="2015-01-01"):
+def _load_fred_series(series_code, col_name, start="2015-01-01"):
     """
-    Robust loader with retry logic to avoid FRED outages.
-    Returns a DataFrame with one column, or empty DataFrame on failure.
+    Generic loader for a single FRED time series.
     """
-    for attempt in range(3):
-        try:
-            df = web.DataReader(series_code, "fred", start)
-            df = df.rename(columns={series_code: col_name})
-            return df.dropna()
-        except Exception as e:
-            print(f"[WARN] Failed loading {col_name} ({series_code}), attempt {attempt+1}: {e}")
-            time.sleep(1.0)
-
-    print(f"[ERROR] Could not load {col_name} after retries.")
-    return pd.DataFrame()
+    try:
+        df = web.DataReader(series_code, "fred", start)
+        df = df.rename(columns={series_code: col_name})
+        return df.dropna()
+    except Exception as e:
+        print(f"Error loading {col_name} ({series_code}) from FRED:", e)
+        return pd.DataFrame()
 
 
 # ---------------------------------------------------------
 # CPI & Real Yield
 # ---------------------------------------------------------
 def load_cpi(start="2015-01-01"):
-    return _safe_fred_load("CPIAUCSL", "US_CPI", start)
+    return _load_fred_series("CPIAUCSL", "US_CPI", start)
 
 
 def load_real_yield(start="2015-01-01"):
-    return _safe_fred_load("DFII10", "US_10Y_Real", start)
+    return _load_fred_series("DFII10", "US_10Y_Real", start)
 
 
 # ---------------------------------------------------------
-# Sovereign 10-Year Yields
+# Sovereign Government Bond Yields (10-Year)
 # ---------------------------------------------------------
 def load_sovereign_yields(start="2015-01-01"):
     """
-    Loads 10Y yields for:
+    10-Year Government Bond Yields for:
     - United States
     - France
     - Germany
@@ -66,13 +61,17 @@ def load_sovereign_yields(start="2015-01-01"):
         "IT_10Y": "IRLTLT01ITM156N",
     }
 
-    series_list = []
-    for col_name, code in bonds.items():
-        df = _safe_fred_load(code, col_name, start)
+    dfs = []
+    for col_name, fred_code in bonds.items():
+        df = _load_fred_series(fred_code, col_name, start)
         if not df.empty:
-            series_list.append(df)
+            dfs.append(df)
 
-    return pd.concat(series_list, axis=1).dropna(how="all") if series_list else pd.DataFrame()
+    if dfs:
+        # Merge on the index (date)
+        return pd.concat(dfs, axis=1).dropna(how="all")
+
+    return pd.DataFrame()
 
 
 # ---------------------------------------------------------
@@ -80,22 +79,25 @@ def load_sovereign_yields(start="2015-01-01"):
 # ---------------------------------------------------------
 def load_gdp(start="2000-01-01"):
     """
-    Quarterly GDP series for:
+    Load GDP for:
     - United States
     - France
     """
-    gdp_codes = {
+    gdp_series = {
         "US_GDP": "GDP",
         "FR_GDP": "CLVMNACSCAB1GQFRA",
     }
 
-    series_list = []
-    for col_name, code in gdp_codes.items():
-        df = _safe_fred_load(code, col_name, start)
+    dfs = []
+    for col_name, fred_code in gdp_series.items():
+        df = _load_fred_series(fred_code, col_name, start)
         if not df.empty:
-            series_list.append(df)
+            dfs.append(df)
 
-    return pd.concat(series_list, axis=1).dropna(how="all") if series_list else pd.DataFrame()
+    if dfs:
+        return pd.concat(dfs, axis=1).dropna(how="all")
+
+    return pd.DataFrame()
 
 
 # ---------------------------------------------------------
@@ -103,7 +105,8 @@ def load_gdp(start="2000-01-01"):
 # ---------------------------------------------------------
 def load_macro_data(start="2015-01-01"):
     """
-    Returns a dict of FRED macro indicators:
+    Returns a dictionary:
+
     {
         "US_CPI": DataFrame,
         "US_10Y_Real": DataFrame,
@@ -120,7 +123,7 @@ def load_macro_data(start="2015-01-01"):
 
 
 # ---------------------------------------------------------
-# Debug test
+# Debug Test
 # ---------------------------------------------------------
 if __name__ == "__main__":
     macro = load_macro_data()
