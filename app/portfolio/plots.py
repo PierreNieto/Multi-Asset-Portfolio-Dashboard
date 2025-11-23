@@ -301,62 +301,113 @@ def plot_normalized_series(
 # CUMULATIVE RETURNS (unit: base 1.0)
 # =====================================================
 
-def plot_cumulative_returns(cum_series: pd.Series, bench_cum: pd.Series = None, bench_name: str = "Benchmark") -> go.Figure:
+def plot_cumulative_returns(
+    cum_series: pd.Series,
+    bench_cum: pd.Series = None,
+    bench_name: str = "Benchmark",
+) -> go.Figure:
     """
-    Plot cumulative returns base=1 with benchmark comparison and shaded zones
-    showing over- and under-performance.
+    Plot Portfolio vs Benchmark (base=1) with green/red shading between curves.
+
+    - Green area = portfolio above benchmark
+    - Red area = portfolio below benchmark
     """
 
     fig = go.Figure()
 
-    # --- Portfolio curve ---
-    fig.add_trace(
-        go.Scatter(
-            x=cum_series.index,
-            y=cum_series.values,
+    # ----- Benchmark aligned ----------
+    if bench_cum is not None:
+        bench_cum = bench_cum.reindex(cum_series.index).ffill()
+
+        port = cum_series.values
+        bench = bench_cum.values
+        idx = cum_series.index
+
+        # Mask pour créer le shading entre les deux courbes
+        above = np.where(port > bench, port, bench)   # upper boundary
+        below = np.where(port > bench, bench, port)   # lower boundary
+
+        # Zone verte = Portfolio > Benchmark
+        fig.add_trace(go.Scatter(
+            x=idx,
+            y=above,
+            mode='lines',
+            line=dict(width=0),
+            showlegend=False,
+            hoverinfo='skip',
+        ))
+        fig.add_trace(go.Scatter(
+            x=idx,
+            y=below,
+            mode='lines',
+            line=dict(width=0),
+            fill='tonexty',
+            fillcolor='rgba(0,200,0,0.18)',
+            name='Outperformance',
+            hoverinfo='skip',
+        ))
+
+        # Zone rouge = Portfolio < Benchmark
+        above_r = np.where(port < bench, bench, port)
+        below_r = np.where(port < bench, port, bench)
+
+        fig.add_trace(go.Scatter(
+            x=idx,
+            y=above_r,
+            mode='lines',
+            line=dict(width=0),
+            showlegend=False,
+            hoverinfo='skip',
+        ))
+        fig.add_trace(go.Scatter(
+            x=idx,
+            y=below_r,
+            mode='lines',
+            line=dict(width=0),
+            fill='tonexty',
+            fillcolor='rgba(255,0,0,0.18)',
+            name='Underperformance',
+            hoverinfo='skip',
+        ))
+
+    # ----- Portfolio curve (au-dessus des zones) -----
+    fig.add_trace(go.Scatter(
+        x=cum_series.index,
+        y=cum_series.values,
+        mode="lines",
+        name="Portfolio",
+        line=dict(width=3),
+    ))
+
+    # ----- Benchmark curve -----
+    if bench_cum is not None:
+        fig.add_trace(go.Scatter(
+            x=bench_cum.index,
+            y=bench_cum.values,
             mode="lines",
-            name="Portfolio",
-            line=dict(width=3)
-        )
+            name=bench_name,
+            line=dict(width=2, dash="dash"),
+        ))
+
+    # ----- Ligne horizontale = 1 -----
+    fig.add_hline(
+        y=1.0,
+        line=dict(color="black", width=1, dash="dot"),
+        annotation_text="Base = 1.0",
+        annotation_position="top left"
     )
 
-    # --- Benchmark curve ---
-    if bench_cum is not None:
-        fig.add_trace(
-            go.Scatter(
-                x=bench_cum.index,
-                y=bench_cum.values,
-                mode="lines",
-                name=bench_name,
-                line=dict(width=2, dash="dash")
-            )
-        )
+    fig.update_layout(
+        title="Portfolio vs Benchmark — Cumulative (base = 1)",
+        xaxis_title="Date",
+        yaxis_title="Cumulative Value",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+    )
 
-        # -----------------------------------
-        # SHADED AREAS: Portfolio - Benchmark
-        # -----------------------------------
+    return _format_xaxis(fig)
 
-        diff = cum_series - bench_cum
 
-        # --- Surperformance (green) ---
-        fig.add_trace(go.Scatter(
-            x=cum_series.index,
-            y=np.where(diff > 0, diff, 0),
-            fill='tozeroy',
-            mode='none',
-            fillcolor='rgba(0, 200, 0, 0.15)',   # soft green
-            name="Outperformance zone"
-        ))
-
-        # --- Sous-performance (red) ---
-        fig.add_trace(go.Scatter(
-            x=cum_series.index,
-            y=np.where(diff < 0, diff, 0),
-            fill='tozeroy',
-            mode='none',
-            fillcolor='rgba(255, 0, 0, 0.15)',   # soft red
-            name="Underperformance zone"
-        ))
 
     # --- Horizontal reference line (base 1) ---
     fig.add_hline(
