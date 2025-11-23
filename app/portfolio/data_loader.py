@@ -48,25 +48,17 @@ DEFAULT_TICKERS = [
     "GC=F",         # Gold
     "BTC-USD",
     "ETH-USD",
-
-    # Rates / sovereign yields (à ajuster selon ce que supporte Yahoo)
-    "^TNX",         # US 10Y
-    "FR10Y.BOND",     # France 10Y 
-    "IT10Y.BOND",     # Italy 10Y
-    "DE10Y.BOND",     # germany 10Y
-    "BZ10Y.BOND",     # Brazil 10Y
 ]
 
 
 def load_multi_asset_data(tickers=DEFAULT_TICKERS, start="2015-01-01", end=None):
-
     data = yf.download(
         tickers,
         start=start,
         end=end,
         progress=False,
         auto_adjust=False,
-        interval="1d"        
+        interval="1d",
     )
 
     # yfinance returns a MultiIndex for multiple tickers:

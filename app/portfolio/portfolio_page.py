@@ -93,10 +93,6 @@ PREDEFINED_BASKETS = {
         "0700.HK", "9988.HK", "600519.SS",
     ],
 
-    "Sovereign Bonds (10Y)": [
-        "^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR",
-    ],
-
     "Crypto / Gold / SP500 / Nvidia": [
         "BTC-USD", "ETH-USD", "GC=F", "SPY", "NVDA",
     ],
@@ -126,12 +122,18 @@ UNITS = {
     "BTC-USD": "$",
     "ETH-USD": "$",
 
-    # Rates (10Y)
-    "^TNX": "%",       # US 10-year
+    # Rates (10Y) - legacy Yahoo tickers (no longer used for data)
+    "^TNX": "%",       # US 10-year (Yahoo)
     "FR10Y=RR": "%", 
     "IT10Y=RR": "%",
     "GR10Y=RR": "%",
     "BR10Y=RR": "%",
+
+    # Sovereign yields from FRED (macro_loader)
+    "US_10Y": "%",
+    "FR_10Y": "%",
+    "DE_10Y": "%",
+    "IT_10Y": "%",
 
     # EUR equities
     "ACA.PA": "€", "AIR.PA": "€", "MC.PA": "€", 
@@ -249,7 +251,10 @@ def run_portfolio_page():
     if basket_choice == "Custom Selection":
         default_selection = DEFAULT_TICKERS
     else:
-        default_selection = PREDEFINED_BASKETS[basket_choice]
+        # Ensure default is always subset of DEFAULT_TICKERS to avoid Streamlit errors
+        default_selection = [
+            t for t in PREDEFINED_BASKETS[basket_choice] if t in DEFAULT_TICKERS
+        ]
 
     selected_tickers = st.sidebar.multiselect(
         "Select assets",
@@ -557,16 +562,37 @@ def run_portfolio_page():
                 st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
-        # Sovereign Bonds
+        # Sovereign Bonds (FRED)
         # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
-            tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
-            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
-            if df_thematic is not None:
+            sovereign_df = None
+
+            # Prefer the aligned version if available
+            if "SOVEREIGN_10Y" in macro_data_aligned:
+                sovereign_df = macro_data_aligned["SOVEREIGN_10Y"].copy()
+            else:
+                raw_sovereign = macro_data.get("SOVEREIGN_10Y")
+                if raw_sovereign is not None and not raw_sovereign.empty:
+                    sovereign_df = raw_sovereign.copy()
+
+            if sovereign_df is None or sovereign_df.empty:
+                st.info("Sovereign bond yields are not available from FRED for this period.")
+            else:
+                # Filter by start date
+                sovereign_df = sovereign_df[
+                    sovereign_df.index >= pd.to_datetime(start_date)
+                ]
+
+                # Resample to selected frequency
+                if freq_code != "D":
+                    sovereign_df = resample_price_data(
+                        sovereign_df, freq=freq_code, how="last"
+                    )
+
                 fig = plot_real_prices(
-                    df_thematic,
+                    sovereign_df,
                     UNITS,
-                    title="10Y Government Bond Yields — Real Levels",
+                    title="10Y Government Bond Yields — FRED data",
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -750,16 +776,34 @@ def run_portfolio_page():
                 st.plotly_chart(fig, use_container_width=True)
 
         # -----------------------------
-        # Sovereign Bonds
+        # Sovereign Bonds (FRED)
         # -----------------------------
         elif panel == "Sovereign bonds (10Y yields)":
-            tickers = ["^TNX", "FR10Y=RR", "IT10Y=RR", "GR10Y=RR", "BR10Y=RR"]
-            df_thematic = _load_thematic_prices(tickers, start_date, freq_code)
-            if df_thematic is not None:
+            sovereign_df = None
+
+            if "SOVEREIGN_10Y" in macro_data_aligned:
+                sovereign_df = macro_data_aligned["SOVEREIGN_10Y"].copy()
+            else:
+                raw_sovereign = macro_data.get("SOVEREIGN_10Y")
+                if raw_sovereign is not None and not raw_sovereign.empty:
+                    sovereign_df = raw_sovereign.copy()
+
+            if sovereign_df is None or sovereign_df.empty:
+                st.info("Sovereign bond yields are not available from FRED for this period.")
+            else:
+                sovereign_df = sovereign_df[
+                    sovereign_df.index >= pd.to_datetime(start_date)
+                ]
+
+                if freq_code != "D":
+                    sovereign_df = resample_price_data(
+                        sovereign_df, freq=freq_code, how="last"
+                    )
+
                 fig = plot_real_prices(
-                    df_thematic,
+                    sovereign_df,
                     UNITS,
-                    title="10Y Government Bond Yields — Real Levels",
+                    title="10Y Government Bond Yields — FRED data",
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -940,10 +984,10 @@ def run_portfolio_page():
 
     <!-- Sovereign Yields & Rates -->
     • <strong>^TNX</strong> — U.S. 10-Year Treasury Yield (%)<br>
-    • <strong>FR10Y</strong> — France 10-Year Sovereign Yield (%)<br>
-    • <strong>IT10Y</strong> — Italy 10-Year Sovereign Yield (%)<br>
-    • <strong>DE10Y</strong> — Germany 10-Year Sovereign Yield (%)<br>
-    • <strong>BR10Y</strong> — Brazil 10-Year Sovereign Yield (%)<br><br>
+    • <strong>FR10Y</strong> — France 10-Year Sovereign Yield (FRED)<br>
+    • <strong>IT10Y</strong> — Italy 10-Year Sovereign Yield (FRED)<br>
+    • <strong>DE10Y</strong> — Germany 10-Year Sovereign Yield (FRED)<br>
+    • <strong>BR10Y</strong> — Brazil 10-Year Sovereign Yield<br><br>
     """,
         unsafe_allow_html=True
     )

@@ -1,56 +1,132 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 20 18:08:09 2025
+Macro Loader Module
+--------------------
+Loads macroeconomic indicators from FRED using pandas_datareader.
 
-@author: nieto
+Includes:
+- US CPI inflation
+- US Real Yield (10Y)
+- Sovereign 10Y Yields (US, France, Germany, Italy)
+- GDP (US, France)
 """
 
 import pandas as pd
 import pandas_datareader.data as web
 
-def load_cpi(start="2015-01-01"):
+
+# ---------------------------------------------------------
+# Helper function
+# ---------------------------------------------------------
+def _load_fred_series(series_code, col_name, start="2015-01-01"):
     """
-    Load US CPI (inflation) from FRED (CPIAUCSL).
-    Monthly inflation index.
+    Generic loader for a single FRED time series.
     """
     try:
-        df = web.DataReader("CPIAUCSL", "fred", start)
-        df = df.rename(columns={"CPIAUCSL": "US_CPI"})
+        df = web.DataReader(series_code, "fred", start)
+        df = df.rename(columns={series_code: col_name})
         return df.dropna()
     except Exception as e:
-        print("Error loading CPI from FRED:", e)
+        print(f"Error loading {col_name} ({series_code}) from FRED:", e)
         return pd.DataFrame()
+
+
+# ---------------------------------------------------------
+# CPI & Real Yield
+# ---------------------------------------------------------
+def load_cpi(start="2015-01-01"):
+    return _load_fred_series("CPIAUCSL", "US_CPI", start)
 
 
 def load_real_yield(start="2015-01-01"):
-    """
-    Load US 10-Year Real Interest Rate from FRED (DFII10).
-    Useful to analyze risk-free real returns.
-    """
-    try:
-        df = web.DataReader("DFII10", "fred", start)
-        df = df.rename(columns={"DFII10": "US_10Y_Real"})
-        return df.dropna()
-    except Exception as e:
-        print("Error loading Real Yield from FRED:", e)
-        return pd.DataFrame()
+    return _load_fred_series("DFII10", "US_10Y_Real", start)
 
 
+# ---------------------------------------------------------
+# Sovereign Government Bond Yields (10-Year)
+# ---------------------------------------------------------
+def load_sovereign_yields(start="2015-01-01"):
+    """
+    10-Year Government Bond Yields for:
+    - United States
+    - France
+    - Germany
+    - Italy
+    """
+    bonds = {
+        "US_10Y": "DGS10",
+        "FR_10Y": "IRLTLT01FRM156N",
+        "DE_10Y": "IRLTLT01DEM156N",
+        "IT_10Y": "IRLTLT01ITM156N",
+    }
+
+    dfs = []
+    for col_name, fred_code in bonds.items():
+        df = _load_fred_series(fred_code, col_name, start)
+        if not df.empty:
+            dfs.append(df)
+
+    if dfs:
+        # Merge on the index (date)
+        return pd.concat(dfs, axis=1).dropna(how="all")
+
+    return pd.DataFrame()
+
+
+# ---------------------------------------------------------
+# GDP (Quarterly)
+# ---------------------------------------------------------
+def load_gdp(start="2000-01-01"):
+    """
+    Load GDP for:
+    - United States
+    - France
+    """
+    gdp_series = {
+        "US_GDP": "GDP",
+        "FR_GDP": "CLVMNACSCAB1GQFRA",
+    }
+
+    dfs = []
+    for col_name, fred_code in gdp_series.items():
+        df = _load_fred_series(fred_code, col_name, start)
+        if not df.empty:
+            dfs.append(df)
+
+    if dfs:
+        return pd.concat(dfs, axis=1).dropna(how="all")
+
+    return pd.DataFrame()
+
+
+# ---------------------------------------------------------
+# Global macro loader
+# ---------------------------------------------------------
 def load_macro_data(start="2015-01-01"):
     """
-    Load all macro indicators used in the portfolio module.
-    Returns a dictionary of DataFrames.
-    """
-    macro_data = {
-        "US_CPI": load_cpi(start),
-        "US_10Y_Real": load_real_yield(start)
+    Returns a dictionary:
+
+    {
+        "US_CPI": DataFrame,
+        "US_10Y_Real": DataFrame,
+        "SOVEREIGN_10Y": DataFrame,
+        "GDP": DataFrame
     }
-    return macro_data
+    """
+    return {
+        "US_CPI": load_cpi(start),
+        "US_10Y_Real": load_real_yield(start),
+        "SOVEREIGN_10Y": load_sovereign_yields(start),
+        "GDP": load_gdp("2000-01-01"),
+    }
 
-"test"
 
-from app.portfolio.macro_loader import load_macro_data
-
-macro = load_macro_data()
-print(macro["US_CPI"].head())
+# ---------------------------------------------------------
+# Debug Test
+# ---------------------------------------------------------
+if __name__ == "__main__":
+    macro = load_macro_data()
+    for k, v in macro.items():
+        print("\n==========", k, "==========")
+        print(v.head())
