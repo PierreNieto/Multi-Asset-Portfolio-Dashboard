@@ -434,10 +434,16 @@ def run_portfolio_page():
     if isinstance(port_ret, pd.DataFrame):
         port_ret = port_ret.iloc[:, 0]
 
-    port_cum = cumulative_returns(port_ret)
+    port_cum = cumulative_returns(port_ret)    
+
+    # Align benchmark to portfolio index
+    benchmark_prices = benchmark_prices.reindex(port_cum.index).ffill()
+
+    # --- Normalize both portfolio and benchmark to BASE = 1 ---
+    port_norm = port_cum / port_cum.iloc[0]
+    bench_norm = benchmark_prices / benchmark_prices.iloc[0]
 
     # --- Benchmark for cumulative comparison ---
-    import yfinance as yf
 
     bench_df = yf.download(
     benchmark,
@@ -450,16 +456,7 @@ def run_portfolio_page():
     else:
         benchmark_prices = bench_df["Adj Close"]
 
-
-    # Align benchmark to portfolio index
-
-    benchmark_prices = benchmark_prices.reindex(port_norm.index).ffill()
-
-
-    # --- Normalize both portfolio and benchmark to BASE = 1 ---
-    port_norm = port_cum / port_cum.iloc[0]
-    bench_norm = benchmark_prices / benchmark_prices.iloc[0]
-
+    # --- corr matrix ---
     corr_mat = correlation_matrix(asset_returns)
 
     # annualization factor
