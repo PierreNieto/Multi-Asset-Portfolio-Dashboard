@@ -439,14 +439,22 @@ def run_portfolio_page():
     # --- Benchmark for cumulative comparison ---
     import yfinance as yf
 
-    benchmark_prices = yf.download(
-        benchmark,
-        start=port_cum.index[0],
-        end=port_cum.index[-1]
-    )["Close"]
+    bench_df = yf.download(
+    benchmark,
+    start=port_norm.index[0],
+    end=port_norm.index[-1]
+    )
+
+    if "Close" in bench_df.columns:
+        benchmark_prices = bench_df["Close"]
+    else:
+        benchmark_prices = bench_df["Adj Close"]
+
 
     # Align benchmark to portfolio index
-    benchmark_prices = benchmark_prices.reindex(port_cum.index).ffill()
+
+    benchmark_prices = benchmark_prices.reindex(port_norm.index).ffill()
+
 
     # --- Normalize both portfolio and benchmark to BASE = 1 ---
     port_norm = port_cum / port_cum.iloc[0]
