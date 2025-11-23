@@ -243,6 +243,64 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
 # NORMALIZED PERFORMANCE (BASE 100)
 # =====================================================
 
+def plot_normalized_series(
+    price_df: pd.DataFrame,
+    title: str = "Normalized Performance (base = 100)",
+) -> go.Figure:
+    """
+    Normalized price comparison (base 100).
+    Each asset is normalized on its own first valid price, so:
+    - assets with shorter history (IPO later) start when data exists
+    - no backward fill is used
+    - no fully-NaN first row that would kill the chart.
+    """
+
+    def _normalize_column(col: pd.Series) -> pd.Series:
+        first_valid = col.first_valid_index()
+        if first_valid is None:
+            return col * np.nan
+        base = col.loc[first_valid]
+        if base == 0 or pd.isna(base):
+            return col * np.nan
+        return (col / base) * 100.0
+
+    df_norm = price_df.apply(_normalize_column)
+
+    df_norm = df_norm.reset_index().rename(columns={"index": "Date"})
+
+    fig = go.Figure()
+
+    for asset in price_df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df_norm["Date"],
+                y=df_norm[asset],
+                mode="lines",
+                name=asset,
+                hovertemplate=(
+                    f"<b>{asset}</b><br>"
+                    "Date: %{x|%d %b %Y}<br>"
+                    "Performance Index: %{y:.2f}<br>"
+                    f"Unit: {_unit_for_asset(asset)}"
+                    "<extra></extra>"
+                ),
+            )
+        )
+
+    fig.update_layout(
+        title=title,
+        xaxis_title="Date",
+        yaxis_title="Performance Index (base = 100)",
+        legend_title="Assets",
+    )
+
+    return _format_xaxis(fig)
+
+
+# =====================================================
+# CUMULATIVE RETURNS (unit: base 1.0)
+# =====================================================
+
 def plot_cumulative_returns(
     cum_series: pd.Series,
     bench_cum: pd.Series = None,
