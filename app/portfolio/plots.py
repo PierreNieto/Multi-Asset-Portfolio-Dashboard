@@ -300,6 +300,8 @@ def plot_normalized_series(
 # =====================================================
 # CUMULATIVE RETURNS (unit: base 1.0)
 # =====================================================
+st.write("Benchmark head:", bench_norm.head())
+st.write("Benchmark tail:", bench_norm.tail())
 
 def plot_cumulative_returns(
     cum_series: pd.Series,
