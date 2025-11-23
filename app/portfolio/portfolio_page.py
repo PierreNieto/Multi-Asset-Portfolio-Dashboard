@@ -238,8 +238,18 @@ def run_portfolio_page():
     # -------------------------------------------------
     # Auto-refresh every 5 minutes (300,000 ms)
     # -------------------------------------------------
-    from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=5 * 60 * 1000)  # 5 minutes
+
+    # Auto-refresh native Streamlit
+    if "last_refresh" not in st.session_state:
+        st.session_state["last_refresh"] = dt.datetime.now()
+
+    now = dt.datetime.now()
+    elapsed = (now - st.session_state["last_refresh"]).total_seconds()
+
+    if elapsed > 300:  # 5 minutes
+        st.session_state["last_refresh"] = now
+        st.experimental_rerun()
+
 
     # -----------------------------
     # Sidebar controls
