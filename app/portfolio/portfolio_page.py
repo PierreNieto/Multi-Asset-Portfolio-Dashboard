@@ -16,6 +16,7 @@
 
 import sys
 import os
+import yfinance as yf
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(ROOT_DIR)
@@ -445,7 +446,7 @@ def run_portfolio_page():
     # -----------------------------
     # Benchmark download + alignment
     # -----------------------------
-    import yfinance as yf
+
 
     bench_df = yf.download(
         benchmark,
