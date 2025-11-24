@@ -15,17 +15,20 @@ def get_price_data(ticker: str, start: dt.date, end: dt.date) -> pd.DataFrame:
         start=start,
         end=end,
         progress=False,
-        auto_adjust=False,  # on fixe le comportement pour éviter le warning
+        auto_adjust=False,  # comportement fixé pour éviter le warning
     )
     return data
 
 
-def ensure_series(x: pd.Series | pd.DataFrame) -> pd.Series:
-    """S'assure qu'on travaille avec une Series (pas un DataFrame)."""
+def ensure_series(x: pd.Series | pd.DataFrame | float | int) -> pd.Series:
+    """S'assure qu'on travaille avec une Series (pas un DataFrame / scalaire)."""
     if isinstance(x, pd.DataFrame):
         # on prend la première colonne si DataFrame
         return x.iloc[:, 0]
-    return x
+    if isinstance(x, pd.Series):
+        return x
+    # si jamais on reçoit un scalaire, on fabrique une Series de longueur 1
+    return pd.Series([x])
 
 
 def backtest_buy_and_hold(close: pd.Series) -> tuple[pd.Series, pd.Series]:
@@ -135,6 +138,13 @@ default_start = today - dt.timedelta(days=365)
 start_date = st.sidebar.date_input("Date de début", value=default_start)
 end_date = st.sidebar.date_input("Date de fin", value=today)
 
+# Periodicity selection (quotidienne / hebdo / mensuelle)
+freq_label = st.sidebar.selectbox(
+    "Fréquence des données",
+    ["Quotidienne", "Hebdomadaire", "Mensuelle"],
+    index=0,
+)
+
 st.sidebar.markdown("---")
 st.sidebar.header("Stratégie MA crossover")
 
@@ -147,11 +157,25 @@ if short_window >= long_window:
 if start_date >= end_date:
     st.error("La date de début doit être avant la date de fin.")
 else:
-    data = get_price_data(ticker, start_date, end_date)
+    data_raw = get_price_data(ticker, start_date, end_date)
 
-    if data.empty:
+    if data_raw.empty:
         st.warning("Aucune donnée trouvée pour ce ticker / ces dates.")
     else:
+        # On prépare les données et on applique la fréquence choisie
+        data = data_raw.copy()
+        data.index = pd.to_datetime(data.index)
+        data = data.sort_index()
+
+        if freq_label == "Hebdomadaire":
+            data = data.resample("W").last()
+        elif freq_label == "Mensuelle":
+            data = data.resample("M").last()
+
+        if data.empty:
+            st.warning("Pas assez de données après changement de fréquence.")
+            st.stop()
+
         if "Close" not in data.columns:
             st.error("La colonne 'Close' est introuvable dans les données téléchargées.")
             st.stop()
@@ -162,16 +186,17 @@ else:
             st.warning("Pas assez de données pour faire un backtest (au moins 2 points).")
             st.stop()
 
-        # -------- Prix ----------
-        st.write(f"### Prix de {ticker}")
+        # -------- Prix brut ----------
+        st.write(f"### Prix de {ticker} ({freq_label.lower()})")
         st.line_chart(close, width="stretch")
+
+        # Prix normalisé pour le graphique principal
+        price_norm = ensure_series(close / close.iloc[0])
 
         # On vérifie qu'on a assez de points pour la stratégie MA
         can_run_ma = len(close) >= long_window + 5
 
         # -------- Backtests --------
-        st.write("### Stratégies : Buy & Hold vs MA crossover")
-
         equity_bh, returns_bh = backtest_buy_and_hold(close)
 
         equity_ma = None
@@ -181,10 +206,8 @@ else:
         if not can_run_ma or short_window >= long_window:
             st.warning(
                 "Pas assez de données pour la stratégie MA crossover "
-                "(ou paramètres de fenêtres invalides). "
-                "Seule la stratégie Buy & Hold est affichée."
+                "(ou paramètres de fenêtres invalides)."
             )
-            equity_df = equity_bh.to_frame(name="Buy & Hold")
         else:
             equity_ma, returns_ma = backtest_ma_crossover(
                 close,
@@ -192,11 +215,42 @@ else:
                 long_window=long_window,
             )
 
-            # DataFrame avec les deux courbes
+        # -------- Graphique principal : prix + stratégie choisie --------
+        st.write("### Graphique principal : prix vs stratégie choisie")
+
+        strategy_options = ["Buy & Hold"]
+        if equity_ma is not None:
+            strategy_options.append(f"MA {short_window}/{long_window}")
+            strategy_options.append("Les deux stratégies")
+
+        selected_strategy = st.selectbox(
+            "Stratégie affichée",
+            strategy_options,
+        )
+
+        # On construit main_df à partir d'une Series (pas d'un scalaire)
+        main_df = price_norm.to_frame(name="Prix normalisé")
+
+        if selected_strategy == "Buy & Hold":
+            main_df["Buy & Hold equity"] = ensure_series(equity_bh)
+        elif selected_strategy.startswith("MA") and equity_ma is not None:
+            main_df[f"MA {short_window}/{long_window} equity"] = ensure_series(equity_ma)
+        elif selected_strategy == "Les deux stratégies" and equity_ma is not None:
+            main_df["Buy & Hold equity"] = ensure_series(equity_bh)
+            main_df[f"MA {short_window}/{long_window} equity"] = ensure_series(equity_ma)
+
+        st.line_chart(main_df, width="stretch")
+
+        # -------- Comparaison des stratégies (equity curves seules) --------
+        st.write("### Stratégies : Buy & Hold vs MA crossover")
+
+        if equity_ma is None:
+            equity_df = ensure_series(equity_bh).to_frame(name="Buy & Hold")
+        else:
             equity_df = pd.concat(
                 [
-                    equity_bh.rename("Buy & Hold"),
-                    equity_ma.rename(f"MA {short_window}/{long_window}"),
+                    ensure_series(equity_bh).rename("Buy & Hold"),
+                    ensure_series(equity_ma).rename(f"MA {short_window}/{long_window}"),
                 ],
                 axis=1,
             )
@@ -236,13 +290,10 @@ else:
                 f"{metrics_bh['max_drawdown'] * 100:.2f} %",
             )
 
-        with col_right:
-            if equity_ma is None or returns_ma is None:
-                st.write("#### MA crossover")
-                st.info("Stratégie MA crossover non disponible avec les paramètres actuels.")
-            else:
-                metrics_ma = compute_metrics(equity_ma, returns_ma)
+        if equity_ma is not None and returns_ma is not None:
+            metrics_ma = compute_metrics(equity_ma, returns_ma)
 
+            with col_right:
                 st.write(f"#### MA {short_window}/{long_window}")
                 c1, c2, c3 = st.columns(3)
                 c4, c5 = st.columns(2)
@@ -294,7 +345,6 @@ else:
                 f"MA = {metrics_ma['total_return'] * 100:.2f} %)"
             )
 
-            # Tableau récapitulatif des métriques
             summary_df = pd.DataFrame(
                 {
                     "Rendement total (%)": [
