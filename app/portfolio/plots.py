@@ -246,6 +246,7 @@ def plot_price_series(price_df: pd.DataFrame) -> go.Figure:
 def plot_normalized_series(
     price_df: pd.DataFrame,
     title: str = "Normalized Performance (base = 100)",
+    portfolio_norm_100: pd.Series = None
 ) -> go.Figure:
     """
     Normalized price comparison (base 100).
@@ -293,6 +294,19 @@ def plot_normalized_series(
         yaxis_title="Performance Index (base = 100)",
         legend_title="Assets",
     )
+
+    # add normalized portfolio curve (hidden by default)
+    if portfolio_norm_100 is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=portfolio_norm_100.index,
+                y=portfolio_norm_100.values,
+                mode="lines",
+                name="Portfolio (base 100)",
+                line=dict(width=2, dash="dash"),
+                visible="legendonly"  # <-- hidden by default
+            )
+        )
 
     return _format_xaxis(fig)
 

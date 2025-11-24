@@ -226,7 +226,7 @@ def _plot_thematic_panel(prices, tickers, title):
         st.warning("No price data available for this thematic panel.")
         return
     fig = plot_real_prices(df, UNITS, title=title)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 
 def run_portfolio_page():
@@ -576,11 +576,13 @@ def run_portfolio_page():
         # -----------------------------
         with overview_tab:
             st.subheader("Price and Portfolio Overview")
+            port_norm_100 = port_norm * 100
             price_fig = plot_normalized_series(
                 prices,
                 title="Global Performance Index (base = 100)",
+                portfolio_norm_100=port_norm_100
             )
-            st.plotly_chart(price_fig, use_container_width=True)
+            st.plotly_chart(price_fig, width="stretch")
 
      
 
@@ -590,7 +592,7 @@ def run_portfolio_page():
             bench_name=benchmark
             )
 
-            st.plotly_chart(port_cum_fig, use_container_width=True)
+            st.plotly_chart(port_cum_fig, width="stretch")
 
         # -----------------------------
         # Thematic comparison panels
@@ -620,7 +622,7 @@ def run_portfolio_page():
                     UNITS,
                     title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # Sovereign Bonds (FRED)
@@ -655,7 +657,7 @@ def run_portfolio_page():
                     UNITS,
                     title="10Y Government Bond Yields — FRED data",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # Top 3 by Region
@@ -674,7 +676,7 @@ def run_portfolio_page():
                     UNITS,
                     title="Top 3 per Region — Real Prices",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # Top 15 Global Market Cap
@@ -692,7 +694,7 @@ def run_portfolio_page():
                     UNITS,
                     title="Top 15 Global Market Cap — Real Prices",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # RISK ANALYSIS TAB (Standard)
@@ -700,13 +702,13 @@ def run_portfolio_page():
         with risk_tab:
             st.subheader("Correlation Matrix")
             corr_fig = plot_correlation_heatmap(corr_mat)
-            st.plotly_chart(corr_fig, use_container_width=True)
+            st.plotly_chart(corr_fig, width="stretch")
 
             st.subheader("Rolling Volatility")
             roll_vol = rolling_volatility(asset_returns, window=rolling_window)
             if not roll_vol.empty:
                 roll_vol_fig = plot_rolling_volatility(roll_vol)
-                st.plotly_chart(roll_vol_fig, use_container_width=True)
+                st.plotly_chart(roll_vol_fig, width="stretch")
             else:
                 st.info("Not enough data to compute rolling volatility.")
 
@@ -715,7 +717,7 @@ def run_portfolio_page():
         # -----------------------------
         with perf_tab:
             st.subheader("Asset-level metrics")
-            st.dataframe(metrics_df.style.format("{:.4f}"), use_container_width=True)
+            st.dataframe(metrics_df.style.format("{:.4f}"), width="stretch")
 
         # -----------------------------
         # MACRO TAB (Standard)
@@ -732,7 +734,7 @@ def run_portfolio_page():
                     fig = plot_real_prices(df, UNITS, title=name)
                     fig = _format_xaxis(fig, start_date)
 
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
 
     # =====================================================
@@ -802,11 +804,13 @@ def run_portfolio_page():
         # -----------------------------
         with pro_overview_tab:
             st.subheader("Price and Portfolio Overview (Pro)")
+            port_norm_100 = port_norm * 100
             price_fig = plot_normalized_series(
                 prices,
                 title="Global Performance Index (base = 100)",
+                portfolio_norm_100=port_norm_100
             )
-            st.plotly_chart(price_fig, use_container_width=True)
+            st.plotly_chart(price_fig, width="stretch")
 
             port_cum_fig = plot_cumulative_returns(
             port_norm,
@@ -814,7 +818,7 @@ def run_portfolio_page():
             bench_name=benchmark
             )
 
-            st.plotly_chart(port_cum_fig, use_container_width=True)
+            st.plotly_chart(port_cum_fig, width="stretch")
 
         # -----------------------------
         # Thematic comparison panels
@@ -844,7 +848,7 @@ def run_portfolio_page():
                     UNITS,
                     title="Gold, Bitcoin, Ethereum, S&P500, Nvidia — Real Prices",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # Sovereign Bonds (FRED)
@@ -876,7 +880,7 @@ def run_portfolio_page():
                     UNITS,
                     title="10Y Government Bond Yields — FRED data",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # Top 3 by Region
@@ -895,7 +899,7 @@ def run_portfolio_page():
                     UNITS,
                     title="Top 3 per Region — Real Prices",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # Top 15 Global Market Cap
@@ -913,7 +917,7 @@ def run_portfolio_page():
                     UNITS,
                     title="Top 15 Global Market Cap — Real Prices",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
 
         # -----------------------------
         # RISK TAB (Pro)
@@ -922,13 +926,13 @@ def run_portfolio_page():
             st.subheader("Correlation & Volatility")
 
             corr_fig = plot_correlation_heatmap(corr_mat)
-            st.plotly_chart(corr_fig, use_container_width=True)
+            st.plotly_chart(corr_fig, width="stretch")
 
             st.subheader("Rolling Volatility (Pro)")
             roll_vol = rolling_volatility(asset_returns, window=rolling_window)
             if not roll_vol.empty:
                 roll_vol_fig = plot_rolling_volatility(roll_vol)
-                st.plotly_chart(roll_vol_fig, use_container_width=True)
+                st.plotly_chart(roll_vol_fig, width="stretch")
             else:
                 st.info("Not enough data to compute rolling volatility.")
 
@@ -942,7 +946,7 @@ def run_portfolio_page():
                 st.info("Not enough data to compute rolling beta for this configuration.")
             else:
                 beta_fig = plot_rolling_beta(rolling_beta_series, benchmark)
-                st.plotly_chart(beta_fig, use_container_width=True)
+                st.plotly_chart(beta_fig, width="stretch")
 
                 # Latest beta KPI
                 last_beta = rolling_beta_series.dropna().iloc[-1]
@@ -956,7 +960,7 @@ def run_portfolio_page():
 
             if not drawdown.empty:
                 dd_fig = plot_drawdown(drawdown)
-                st.plotly_chart(dd_fig, use_container_width=True)
+                st.plotly_chart(dd_fig, width="stretch")
             else:
                 st.info("Not enough data to compute drawdown.")
 
@@ -993,7 +997,7 @@ def run_portfolio_page():
             )
 
             frontier_fig = plot_efficient_frontier(ef_results, current_vol, current_ret)
-            st.plotly_chart(frontier_fig, use_container_width=True)
+            st.plotly_chart(frontier_fig, width="stretch")
 
         # -----------------------------
         # MACRO TAB (Pro)
@@ -1011,7 +1015,7 @@ def run_portfolio_page():
 
                     fig = _format_xaxis(fig, start_date)
 
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
 
 
     # -----------------------------
