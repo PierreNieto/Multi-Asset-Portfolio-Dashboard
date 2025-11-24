@@ -15,32 +15,73 @@ def get_price_data(ticker: str, start: dt.date, end: dt.date) -> pd.DataFrame:
         start=start,
         end=end,
         progress=False,
+        auto_adjust=False,  # on fixe le comportement pour éviter le warning
     )
     return data
+
+
+def ensure_series(x: pd.Series | pd.DataFrame) -> pd.Series:
+    """S'assure qu'on travaille avec une Series (pas un DataFrame)."""
+    if isinstance(x, pd.DataFrame):
+        # on prend la première colonne si DataFrame
+        return x.iloc[:, 0]
+    return x
 
 
 def backtest_buy_and_hold(close: pd.Series) -> tuple[pd.Series, pd.Series]:
     """
     Backtest Buy & Hold.
-    - close : série des prix de clôture
+    - close : prix de clôture
     Retourne:
       - equity : valeur cumulée du portefeuille (normalisée à 1 au début)
       - returns : rendements journaliers
     """
-    # Si jamais on reçoit un DataFrame, on prend juste la première colonne
-    if isinstance(close, pd.DataFrame):
-        close = close.iloc[:, 0]
-
-    # On s'assure que c'est bien une Series triée par date
-    close = close.sort_index()
+    close = ensure_series(close).sort_index()
 
     equity = close / close.iloc[0]
     returns = equity.pct_change().dropna()
     return equity, returns
 
 
+def backtest_ma_crossover(
+    close: pd.Series,
+    short_window: int,
+    long_window: int,
+) -> tuple[pd.Series, pd.Series]:
+    """
+    Backtest stratégie de croisement de moyennes mobiles.
+    - Position = 1 quand MA courte > MA longue, sinon 0.
+    """
+    close = ensure_series(close).sort_index()
+
+    df = pd.DataFrame({"close": close})
+    df["ma_short"] = df["close"].rolling(short_window).mean()
+    df["ma_long"] = df["close"].rolling(long_window).mean()
+
+    # On enlève les débuts où les moyennes ne sont pas définies
+    df = df.dropna()
+    if len(df) < 2:
+        # Pas assez de points pour une vraie stratégie, on retourne quelque chose de trivial
+        equity = pd.Series([1.0], index=df.index[:1])
+        returns = equity.pct_change().dropna()
+        return equity, returns
+
+    signals = (df["ma_short"] > df["ma_long"]).astype(int)
+
+    daily_returns = df["close"].pct_change().fillna(0)
+    # On applique la position de la veille
+    strategy_returns = daily_returns * signals.shift(1).fillna(0)
+
+    equity = (1 + strategy_returns).cumprod()
+    returns = equity.pct_change().dropna()
+
+    return equity, returns
+
+
 def compute_metrics(equity: pd.Series, returns: pd.Series) -> dict:
     """Calcule quelques métriques de performance."""
+    equity = ensure_series(equity)
+
     total_return = equity.iloc[-1] - 1
 
     # Nombre de jours entre le début et la fin
@@ -77,12 +118,15 @@ def compute_metrics(equity: pd.Series, returns: pd.Series) -> dict:
 st.title("Multi-Asset Portfolio Dashboard")
 st.subheader("Module Quant A - Single Asset")
 
-st.write("Ceci est ma toute première version de l'app 😎")
+st.write(
+    "Analyse d'un seul actif avec deux stratégies : "
+    "Buy & Hold et croisement de moyennes mobiles."
+)
 
 # --- Contrôles utilisateur ---
 st.sidebar.header("Paramètres de l'actif")
 
-DEFAULT_TICKER = "BTC-USD"  # tu pourras choisir ton actif officiel ici
+DEFAULT_TICKER = "BTC-USD"  # tu pourras fixer ton actif officiel ici
 ticker = st.sidebar.text_input("Ticker (Yahoo Finance)", value=DEFAULT_TICKER)
 
 today = dt.date.today()
@@ -90,6 +134,15 @@ default_start = today - dt.timedelta(days=365)
 
 start_date = st.sidebar.date_input("Date de début", value=default_start)
 end_date = st.sidebar.date_input("Date de fin", value=today)
+
+st.sidebar.markdown("---")
+st.sidebar.header("Stratégie MA crossover")
+
+short_window = st.sidebar.slider("Moyenne mobile courte", 5, 50, 20)
+long_window = st.sidebar.slider("Moyenne mobile longue", 20, 200, 100)
+
+if short_window >= long_window:
+    st.sidebar.error("La fenêtre courte doit être strictement plus petite que la longue.")
 
 if start_date >= end_date:
     st.error("La date de début doit être avant la date de fin.")
@@ -99,7 +152,6 @@ else:
     if data.empty:
         st.warning("Aucune donnée trouvée pour ce ticker / ces dates.")
     else:
-        # On récupère bien la colonne Close, et on enlève les NaN
         if "Close" not in data.columns:
             st.error("La colonne 'Close' est introuvable dans les données téléchargées.")
             st.stop()
@@ -112,44 +164,107 @@ else:
 
         # -------- Prix ----------
         st.write(f"### Prix de {ticker}")
-        st.line_chart(close, use_container_width=True)
+        st.line_chart(close, width="stretch")
 
-        # -------- Backtest Buy & Hold --------
-        st.write("### Backtest : Buy & Hold")
+        # On vérifie qu'on a assez de points pour la stratégie MA
+        can_run_ma = len(close) >= long_window + 5
 
-        equity, returns = backtest_buy_and_hold(close)
+        # -------- Backtests --------
+        st.write("### Stratégies : Buy & Hold vs MA crossover")
 
-        # Ici equity est garanti comme Series → to_frame fonctionne
-        equity_df = equity.to_frame(name="Buy & Hold equity")
+        equity_bh, returns_bh = backtest_buy_and_hold(close)
 
-        st.line_chart(equity_df, use_container_width=True)
+        if not can_run_ma or short_window >= long_window:
+            st.warning(
+                "Pas assez de données pour la stratégie MA crossover "
+                "(ou paramètres de fenêtres invalides). "
+                "Seule la stratégie Buy & Hold est affichée."
+            )
+            equity_df = equity_bh.to_frame(name="Buy & Hold")
+            equity_ma = None
+            returns_ma = None
+        else:
+            equity_ma, returns_ma = backtest_ma_crossover(
+                close,
+                short_window=short_window,
+                long_window=long_window,
+            )
+
+            # DataFrame avec les deux courbes
+            equity_df = pd.concat(
+                [
+                    equity_bh.rename("Buy & Hold"),
+                    equity_ma.rename(f"MA {short_window}/{long_window}"),
+                ],
+                axis=1,
+            )
+
+        st.line_chart(equity_df, width="stretch")
 
         # -------- Metrics --------
-        metrics = compute_metrics(equity, returns)
+        st.write("### Performance des stratégies")
 
-        col1, col2, col3 = st.columns(3)
-        col4, col5 = st.columns(2)
+        metrics_bh = compute_metrics(equity_bh, returns_bh)
 
-        col1.metric(
-            "Rendement total",
-            f"{metrics['total_return'] * 100:.2f} %",
-        )
-        col2.metric(
-            "Rendement annualisé",
-            f"{metrics['annual_return'] * 100:.2f} %",
-        )
-        col3.metric(
-            "Volatilité annualisée",
-            f"{metrics['annual_vol'] * 100:.2f} %",
-        )
-        col4.metric(
-            "Sharpe (rf=0)",
-            f"{metrics['sharpe']:.2f}",
-        )
-        col5.metric(
-            "Max drawdown",
-            f"{metrics['max_drawdown'] * 100:.2f} %",
-        )
+        col_left, col_right = st.columns(2)
 
-        st.write("Aperçu des données :")
-        st.dataframe(data.tail(), use_container_width=True)
+        with col_left:
+            st.write("#### Buy & Hold")
+            c1, c2, c3 = st.columns(3)
+            c4, c5 = st.columns(2)
+
+            c1.metric(
+                "Rendement total",
+                f"{metrics_bh['total_return'] * 100:.2f} %",
+            )
+            c2.metric(
+                "Rendement annualisé",
+                f"{metrics_bh['annual_return'] * 100:.2f} %",
+            )
+            c3.metric(
+                "Volatilité annualisée",
+                f"{metrics_bh['annual_vol'] * 100:.2f} %",
+            )
+            c4.metric(
+                "Sharpe (rf=0)",
+                f"{metrics_bh['sharpe']:.2f}",
+            )
+            c5.metric(
+                "Max drawdown",
+                f"{metrics_bh['max_drawdown'] * 100:.2f} %",
+            )
+
+        with col_right:
+            if equity_ma is None or returns_ma is None:
+                st.write("#### MA crossover")
+                st.info("Stratégie MA crossover non disponible avec les paramètres actuels.")
+            else:
+                metrics_ma = compute_metrics(equity_ma, returns_ma)
+
+                st.write(f"#### MA {short_window}/{long_window}")
+                c1, c2, c3 = st.columns(3)
+                c4, c5 = st.columns(2)
+
+                c1.metric(
+                    "Rendement total",
+                    f"{metrics_ma['total_return'] * 100:.2f} %",
+                )
+                c2.metric(
+                    "Rendement annualisé",
+                    f"{metrics_ma['annual_return'] * 100:.2f} %",
+                )
+                c3.metric(
+                    "Volatilité annualisée",
+                    f"{metrics_ma['annual_vol'] * 100:.2f} %",
+                )
+                c4.metric(
+                    "Sharpe (rf=0)",
+                    f"{metrics_ma['sharpe']:.2f}",
+                )
+                c5.metric(
+                    "Max drawdown",
+                    f"{metrics_ma['max_drawdown'] * 100:.2f} %",
+                )
+
+        st.write("### Aperçu des données brutes")
+        st.dataframe(data.tail(), width="stretch")
