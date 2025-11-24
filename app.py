@@ -238,6 +238,7 @@ else:
             if equity_ma is None or returns_ma is None:
                 st.write("#### MA crossover")
                 st.info("Stratégie MA crossover non disponible avec les paramètres actuels.")
+                metrics_ma = None
             else:
                 metrics_ma = compute_metrics(equity_ma, returns_ma)
 
@@ -265,6 +266,32 @@ else:
                     "Max drawdown",
                     f"{metrics_ma['max_drawdown'] * 100:.2f} %",
                 )
+
+        # -------- Comparaison rapide --------
+        if "metrics_ma" in locals() and metrics_ma is not None:
+            st.write("### Comparaison rapide des stratégies")
+
+            better_sharpe = (
+                "MA crossover"
+                if metrics_ma["sharpe"] > metrics_bh["sharpe"]
+                else "Buy & Hold"
+            )
+            better_return = (
+                "MA crossover"
+                if metrics_ma["total_return"] > metrics_bh["total_return"]
+                else "Buy & Hold"
+            )
+
+            st.write(
+                f"- **Sharpe le plus élevé :** {better_sharpe} "
+                f"(BH = {metrics_bh['sharpe']:.2f}, "
+                f"MA = {metrics_ma['sharpe']:.2f})"
+            )
+            st.write(
+                f"- **Meilleur rendement total :** {better_return} "
+                f"(BH = {metrics_bh['total_return'] * 100:.2f} %, "
+                f"MA = {metrics_ma['total_return'] * 100:.2f} %)"
+            )
 
         st.write("### Aperçu des données brutes")
         st.dataframe(data.tail(), width="stretch")
