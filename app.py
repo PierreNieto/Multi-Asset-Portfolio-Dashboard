@@ -174,6 +174,10 @@ else:
 
         equity_bh, returns_bh = backtest_buy_and_hold(close)
 
+        equity_ma = None
+        returns_ma = None
+        metrics_ma = None
+
         if not can_run_ma or short_window >= long_window:
             st.warning(
                 "Pas assez de données pour la stratégie MA crossover "
@@ -181,8 +185,6 @@ else:
                 "Seule la stratégie Buy & Hold est affichée."
             )
             equity_df = equity_bh.to_frame(name="Buy & Hold")
-            equity_ma = None
-            returns_ma = None
         else:
             equity_ma, returns_ma = backtest_ma_crossover(
                 close,
@@ -238,7 +240,6 @@ else:
             if equity_ma is None or returns_ma is None:
                 st.write("#### MA crossover")
                 st.info("Stratégie MA crossover non disponible avec les paramètres actuels.")
-                metrics_ma = None
             else:
                 metrics_ma = compute_metrics(equity_ma, returns_ma)
 
@@ -267,8 +268,8 @@ else:
                     f"{metrics_ma['max_drawdown'] * 100:.2f} %",
                 )
 
-        # -------- Comparaison rapide --------
-        if "metrics_ma" in locals() and metrics_ma is not None:
+        # -------- Comparaison rapide + tableau --------
+        if metrics_ma is not None:
             st.write("### Comparaison rapide des stratégies")
 
             better_sharpe = (
@@ -291,6 +292,57 @@ else:
                 f"- **Meilleur rendement total :** {better_return} "
                 f"(BH = {metrics_bh['total_return'] * 100:.2f} %, "
                 f"MA = {metrics_ma['total_return'] * 100:.2f} %)"
+            )
+
+            # Tableau récapitulatif des métriques
+            summary_df = pd.DataFrame(
+                {
+                    "Rendement total (%)": [
+                        metrics_bh["total_return"] * 100,
+                        metrics_ma["total_return"] * 100,
+                    ],
+                    "Rendement annualisé (%)": [
+                        metrics_bh["annual_return"] * 100,
+                        metrics_ma["annual_return"] * 100,
+                    ],
+                    "Volatilité annualisée (%)": [
+                        metrics_bh["annual_vol"] * 100,
+                        metrics_ma["annual_vol"] * 100,
+                    ],
+                    "Sharpe": [
+                        metrics_bh["sharpe"],
+                        metrics_ma["sharpe"],
+                    ],
+                    "Max drawdown (%)": [
+                        metrics_bh["max_drawdown"] * 100,
+                        metrics_ma["max_drawdown"] * 100,
+                    ],
+                },
+                index=["Buy & Hold", f"MA {short_window}/{long_window}"],
+            )
+
+            st.write("#### Tableau récapitulatif des métriques")
+            st.dataframe(summary_df.round(2), width="stretch")
+
+        # -------- Explications texte --------
+        with st.expander("Explications sur les stratégies"):
+            st.markdown(
+                """
+### Stratégie Buy & Hold
+- On achète l'actif au début de la période et on le conserve jusqu'à la fin.
+- La courbe d'équity représente la valeur du portefeuille normalisée à 1 au début.
+- Cette stratégie sert de **référence passive** pour comparer les stratégies actives.
+
+### Stratégie MA crossover
+- On calcule deux moyennes mobiles sur le prix de clôture :
+  - une **moyenne courte** (réagit vite),
+  - une **moyenne longue** (plus lisse).
+- Quand la moyenne courte passe **au-dessus** de la longue → on est investi (position = 1).
+- Quand elle passe **en-dessous** → on sort du marché (position = 0).
+- Cette stratégie cherche à :
+  - **capturer les tendances** haussières,
+  - tout en réduisant l'exposition pendant les phases baissières.
+                """
             )
 
         st.write("### Aperçu des données brutes")
