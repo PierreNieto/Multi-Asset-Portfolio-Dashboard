@@ -24,6 +24,7 @@ sys.path.append(ROOT_DIR)
 #---------------------------
 
 import datetime as dt
+from streamlit_autorefresh import st_autorefresh
 
 import streamlit as st
 import pandas as pd
@@ -66,6 +67,8 @@ from app.portfolio.plots import (
     _format_xaxis, 
 )
 from app.portfolio.macro_loader import load_macro_data
+
+st.write("Last refresh:", dt.datetime.now())
 
 # -------------------------------------------------
 # Predefined baskets of assets
@@ -214,7 +217,7 @@ def _load_thematic_prices(tickers, start_date: dt.date, freq_code: str) -> pd.Da
 
 # -----------------------------
 # (Old helper kept for reference – not used anymore)
-# -----------------------------
+
 
 def _plot_thematic_panel(prices, tickers, title):
     """
@@ -228,6 +231,7 @@ def _plot_thematic_panel(prices, tickers, title):
     fig = plot_real_prices(df, UNITS, title=title)
     st.plotly_chart(fig, width="stretch")
 
+# -----------------------------
 
 def run_portfolio_page():
     st.title("Multi-Asset Portfolio Dashboard")
@@ -235,7 +239,7 @@ def run_portfolio_page():
         "Quant B — Multi-Asset Portfolio Module: "
         "risk–return analysis across equities, rates, commodities and crypto."
     )
-
+    st_autorefresh(interval=300000, key="portfolio_refresh_5min")
     # -----------------------------
     # Sidebar controls
     # -----------------------------
