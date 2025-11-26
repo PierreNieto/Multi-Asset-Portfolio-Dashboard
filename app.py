@@ -30,7 +30,7 @@ def get_price_data(ticker, start_date, end_date):
 
 def to_series(obj):
     """
-    Make sure we are working with a a pandas Series.
+    Make sure we are working with a pandas Series.
     If it's a DataFrame, take the first column.
     If it's a scalar, build a 1-element Series.
     """
@@ -225,17 +225,13 @@ st.write(
 # -------- Sidebar controls --------
 st.sidebar.header("Asset settings")
 
-# Official single asset for the project
-default_ticker = "BTC-USD"
+# Official single asset for the project: EUR/USD FX rate
+default_ticker = "EURUSD=X"
 ticker = st.sidebar.text_input("Ticker (Yahoo Finance)", value=default_ticker)
 st.sidebar.caption(
-    "Main asset studied: BTC-USD (Bitcoin / USD). "
-    "You can also try other valid Yahoo tickers, for example: "
-    "AAPL (Apple), MSFT (Microsoft), TSLA (Tesla), "
-    "SPY (S&P 500 ETF), ^GSPC (S&P 500 index), "
-    "GLD (Gold ETF), "
-    "EURUSD=X (EUR/USD), USDJPY=X (USD/JPY), "
-    "BTC-USD, ETH-USD, etc."
+    "Main asset studied in this project: EURUSD=X (EUR/USD FX rate). "
+    "You can also test other FX tickers: "
+    "GBPUSD=X (GBP/USD), USDJPY=X (USD/JPY), EURJPY=X (EUR/JPY), BTC-USD (Bitcoin), AAPL (Apple), MSFT (Microsoft)."
 )
 
 today = dt.date.today()
@@ -265,13 +261,13 @@ else:  # Monthly
     long_min, long_max, long_default = 3, 24, 6
 
 short_window = st.sidebar.slider(
-    "Short moving average window",
+    "Short MA window",
     min_value=short_min,
     max_value=short_max,
     value=short_default,
 )
 long_window = st.sidebar.slider(
-    "Long moving average window",
+    "Long MA window",
     min_value=long_min,
     max_value=long_max,
     value=long_default,
@@ -394,24 +390,29 @@ else:
             m4, m5 = st.columns(2)
 
             m1.metric(
-                "Total return (overall gain)",
+                "Total return",
                 f"{metrics_bh['total_return'] * 100:.2f} %",
+                help="Overall gain over the whole period.",
             )
             m2.metric(
-                "Annualized return (per year)",
+                "Ann. return",
                 f"{metrics_bh['annual_return'] * 100:.2f} %",
+                help="Average yearly growth rate.",
             )
             m3.metric(
-                "Annualized vol (risk)",
+                "Ann. vol",
                 f"{metrics_bh['annual_vol'] * 100:.2f} %",
+                help="Yearly volatility (risk level).",
             )
             m4.metric(
-                "Sharpe (risk-adjusted)",
+                "Sharpe",
                 f"{metrics_bh['sharpe']:.2f}",
+                help="Return divided by risk (higher is better).",
             )
             m5.metric(
-                "Max drawdown (worst drop)",
+                "Max DD",
                 f"{metrics_bh['max_drawdown'] * 100:.2f} %",
+                help="Worst peak-to-trough loss over the period.",
             )
 
         # MA crossover metrics (if available)
@@ -424,24 +425,29 @@ else:
                 m4, m5 = st.columns(2)
 
                 m1.metric(
-                    "Total return (overall gain)",
+                    "Total return",
                     f"{metrics_ma['total_return'] * 100:.2f} %",
+                    help="Overall gain over the whole period.",
                 )
                 m2.metric(
-                    "Annualized return (per year)",
+                    "Ann. return",
                     f"{metrics_ma['annual_return'] * 100:.2f} %",
+                    help="Average yearly growth rate.",
                 )
                 m3.metric(
-                    "Annualized vol (risk)",
+                    "Ann. vol",
                     f"{metrics_ma['annual_vol'] * 100:.2f} %",
+                    help="Yearly volatility (risk level).",
                 )
                 m4.metric(
-                    "Sharpe (risk-adjusted)",
+                    "Sharpe",
                     f"{metrics_ma['sharpe']:.2f}",
+                    help="Return divided by risk (higher is better).",
                 )
                 m5.metric(
-                    "Max drawdown (worst drop)",
+                    "Max DD",
                     f"{metrics_ma['max_drawdown'] * 100:.2f} %",
+                    help="Worst peak-to-trough loss over the period.",
                 )
 
         # -------- Quick comparison + table --------
@@ -475,11 +481,11 @@ else:
                         metrics_bh["total_return"] * 100,
                         metrics_ma["total_return"] * 100,
                     ],
-                    "Annualized return (%)": [
+                    "Ann. return (%)": [
                         metrics_bh["annual_return"] * 100,
                         metrics_ma["annual_return"] * 100,
                     ],
-                    "Annualized vol (%)": [
+                    "Ann. vol (%)": [
                         metrics_bh["annual_vol"] * 100,
                         metrics_ma["annual_vol"] * 100,
                     ],
@@ -487,7 +493,7 @@ else:
                         metrics_bh["sharpe"],
                         metrics_ma["sharpe"],
                     ],
-                    "Max drawdown (%)": [
+                    "Max DD (%)": [
                         metrics_bh["max_drawdown"] * 100,
                         metrics_ma["max_drawdown"] * 100,
                     ],
