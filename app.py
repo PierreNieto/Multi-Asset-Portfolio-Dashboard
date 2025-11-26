@@ -30,7 +30,7 @@ def get_price_data(ticker, start_date, end_date):
 
 def to_series(obj):
     """
-    Make sure we are working with a pandas Series.
+    Make sure we are working with a a pandas Series.
     If it's a DataFrame, take the first column.
     If it's a scalar, build a 1-element Series.
     """
@@ -230,7 +230,12 @@ default_ticker = "BTC-USD"
 ticker = st.sidebar.text_input("Ticker (Yahoo Finance)", value=default_ticker)
 st.sidebar.caption(
     "Main asset studied: BTC-USD (Bitcoin / USD). "
-    "You can also try other valid Yahoo tickers, e.g. AAPL, MSFT, EURUSD=X."
+    "You can also try other valid Yahoo tickers, for example: "
+    "AAPL (Apple), MSFT (Microsoft), TSLA (Tesla), "
+    "SPY (S&P 500 ETF), ^GSPC (S&P 500 index), "
+    "GLD (Gold ETF), "
+    "EURUSD=X (EUR/USD), USDJPY=X (USD/JPY), "
+    "BTC-USD, ETH-USD, etc."
 )
 
 today = dt.date.today()
@@ -388,11 +393,26 @@ else:
             m1, m2, m3 = st.columns(3)
             m4, m5 = st.columns(2)
 
-            m1.metric("Total return", f"{metrics_bh['total_return'] * 100:.2f} %")
-            m2.metric("Annualized return", f"{metrics_bh['annual_return'] * 100:.2f} %")
-            m3.metric("Annualized vol", f"{metrics_bh['annual_vol'] * 100:.2f} %")
-            m4.metric("Sharpe (rf = 0)", f"{metrics_bh['sharpe']:.2f}")
-            m5.metric("Max drawdown", f"{metrics_bh['max_drawdown'] * 100:.2f} %")
+            m1.metric(
+                "Total return (overall gain)",
+                f"{metrics_bh['total_return'] * 100:.2f} %",
+            )
+            m2.metric(
+                "Annualized return (per year)",
+                f"{metrics_bh['annual_return'] * 100:.2f} %",
+            )
+            m3.metric(
+                "Annualized vol (risk)",
+                f"{metrics_bh['annual_vol'] * 100:.2f} %",
+            )
+            m4.metric(
+                "Sharpe (risk-adjusted)",
+                f"{metrics_bh['sharpe']:.2f}",
+            )
+            m5.metric(
+                "Max drawdown (worst drop)",
+                f"{metrics_bh['max_drawdown'] * 100:.2f} %",
+            )
 
         # MA crossover metrics (if available)
         if equity_ma is not None and rets_ma is not None:
@@ -403,18 +423,24 @@ else:
                 m1, m2, m3 = st.columns(3)
                 m4, m5 = st.columns(2)
 
-                m1.metric("Total return", f"{metrics_ma['total_return'] * 100:.2f} %")
+                m1.metric(
+                    "Total return (overall gain)",
+                    f"{metrics_ma['total_return'] * 100:.2f} %",
+                )
                 m2.metric(
-                    "Annualized return",
+                    "Annualized return (per year)",
                     f"{metrics_ma['annual_return'] * 100:.2f} %",
                 )
                 m3.metric(
-                    "Annualized vol",
+                    "Annualized vol (risk)",
                     f"{metrics_ma['annual_vol'] * 100:.2f} %",
                 )
-                m4.metric("Sharpe (rf = 0)", f"{metrics_ma['sharpe']:.2f}")
+                m4.metric(
+                    "Sharpe (risk-adjusted)",
+                    f"{metrics_ma['sharpe']:.2f}",
+                )
                 m5.metric(
-                    "Max drawdown",
+                    "Max drawdown (worst drop)",
                     f"{metrics_ma['max_drawdown'] * 100:.2f} %",
                 )
 
@@ -493,7 +519,8 @@ else:
                     st.line_chart(forecast_df, width="stretch")
                     st.caption(
                         "Forecast based on a simple linear regression of price vs time, "
-                        "with an approximate 95% confidence band."
+                        "with an approximate 95% confidence band. "
+                        "This is a very basic model, mainly used for illustration."
                     )
                 except Exception as e:
                     st.error(f"Error while computing forecast: {e}")
@@ -502,25 +529,27 @@ else:
         with st.expander("Strategy explanations"):
             st.markdown(
                 """
-### Buy & Hold
-- Invest once at the beginning and keep the position until the end.
-- The equity curve shows the portfolio value normalized to 1 at the start.
-- This is a **passive benchmark** to compare active strategies.
+### Buy & Hold (simple benchmark)
+- You buy the asset once at the beginning and keep it until the end.
+- The equity curve shows how 1 invested at the start evolves over time.
+- This is a very simple **passive strategy**, used as a benchmark.
 
-### Moving Average Crossover
+### Moving Average Crossover (trend following)
 - We compute two moving averages on the closing price:
-  - a **short** moving average (reacts faster),
-  - a **long** moving average (smoother).
+  - a **short** moving average (reacts faster to new moves),
+  - a **long** moving average (smoother, slower).
 - When the short MA is **above** the long MA → we are invested (position = 1).
 - When the short MA is **below** the long MA → we are out of the market (position = 0).
-- The goal is to:
-  - **capture upward trends**,
-  - and reduce exposure during downtrends.
+- Idea: try to
+  - **follow upward trends**,
+  - and stay out during strong downtrends.
 
 ### Simple prediction model (bonus)
-- We fit a **linear trend** of the price with respect to time.
-- We extend this trend into the future on a user-chosen horizon.
-- The 95% confidence band is built from the standard deviation of the residuals.
+- We fit a **linear trend** of the price over time (straight line).
+- We extend this line into the future for a few periods (chosen by the user).
+- The 95% confidence band is built from the typical size of past errors.
+- This model is **very basic** and should not be used for real trading,
+  but it shows how we can connect time series and prediction.
                 """
             )
 
