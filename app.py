@@ -14,13 +14,17 @@ def get_price_data(ticker, start_date, end_date):
     """
     Download price data from Yahoo Finance.
     """
-    data = yf.download(
-        ticker,
-        start=start_date,
-        end=end_date,
-        progress=False,
-        auto_adjust=False,  # we keep raw prices (no dividend / split adjust)
-    )
+    try:
+        data = yf.download(
+            ticker,
+            start=start_date,
+            end=end_date,
+            progress=False,
+            auto_adjust=False,  # keep raw prices (no dividend / split adjust)
+        )
+    except Exception:
+        # if yfinance fails (bad ticker, network issue, ...)
+        return pd.DataFrame()
     return data
 
 
@@ -221,8 +225,13 @@ st.write(
 # -------- Sidebar controls --------
 st.sidebar.header("Asset settings")
 
+# Official single asset for the project
 default_ticker = "BTC-USD"
 ticker = st.sidebar.text_input("Ticker (Yahoo Finance)", value=default_ticker)
+st.sidebar.caption(
+    "Main asset studied: BTC-USD (Bitcoin / USD). "
+    "You can also try other valid Yahoo tickers, e.g. AAPL, MSFT, EURUSD=X."
+)
 
 today = dt.date.today()
 default_start = today - dt.timedelta(days=365)
@@ -239,8 +248,29 @@ freq_label = st.sidebar.selectbox(
 st.sidebar.markdown("---")
 st.sidebar.header("MA crossover strategy")
 
-short_window = st.sidebar.slider("Short moving average window", 5, 50, 20)
-long_window = st.sidebar.slider("Long moving average window", 20, 200, 100)
+# Windows adapted to the chosen frequency
+if freq_label == "Daily":
+    short_min, short_max, short_default = 5, 50, 20
+    long_min, long_max, long_default = 20, 200, 100
+elif freq_label == "Weekly":
+    short_min, short_max, short_default = 2, 20, 5
+    long_min, long_max, long_default = 5, 52, 20
+else:  # Monthly
+    short_min, short_max, short_default = 2, 12, 3
+    long_min, long_max, long_default = 3, 24, 6
+
+short_window = st.sidebar.slider(
+    "Short moving average window",
+    min_value=short_min,
+    max_value=short_max,
+    value=short_default,
+)
+long_window = st.sidebar.slider(
+    "Long moving average window",
+    min_value=long_min,
+    max_value=long_max,
+    value=long_default,
+)
 
 if short_window >= long_window:
     st.sidebar.error("Short window must be strictly smaller than long window.")
@@ -252,7 +282,10 @@ else:
     data_raw = get_price_data(ticker, start_date, end_date)
 
     if data_raw.empty:
-        st.warning("No data found for this ticker and date range.")
+        st.warning(
+            "No data found for this ticker and date range. "
+            "Please check the symbol (for FX, use e.g. EURUSD=X instead of EUR-USD)."
+        )
     else:
         data = data_raw.copy()
         data.index = pd.to_datetime(data.index)
@@ -286,7 +319,8 @@ else:
         price_norm = to_series(close / close.iloc[0])
 
         # can we run MA strategy?
-        can_run_ma = len(close) >= long_window + 5
+        # a bit more relaxed condition, but still avoids nonsense
+        can_run_ma = len(close) > long_window + 2
 
         # -------- Backtests --------
         equity_bh, rets_bh = backtest_buy_and_hold(close)
@@ -297,8 +331,8 @@ else:
 
         if not can_run_ma or short_window >= long_window:
             st.warning(
-                "Not enough data for the MA crossover strategy "
-                "or invalid window settings."
+                "Not enough data for the MA crossover strategy with the current "
+                "windows. Try reducing the long window or using Daily data."
             )
         else:
             equity_ma, rets_ma = backtest_ma_crossover(close, short_window, long_window)
