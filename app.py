@@ -37,7 +37,7 @@ def backtest_buy_and_hold(close: pd.Series) -> tuple[pd.Series, pd.Series]:
     - close : prix de clôture
     Retourne:
       - equity : valeur cumulée du portefeuille (normalisée à 1 au début)
-      - returns : rendements journaliers
+      - returns : rendements par période
     """
     close = ensure_series(close).sort_index()
 
@@ -116,6 +116,69 @@ def compute_metrics(equity: pd.Series, returns: pd.Series) -> dict:
     }
 
 
+def forecast_linear_trend(
+    close: pd.Series,
+    horizon: int,
+    freq_label: str,
+) -> pd.DataFrame:
+    """
+    Modèle prédictif simple : régression linéaire du prix en fonction du temps.
+    Retourne un DataFrame avec :
+      - Prix historique
+      - Prévision
+      - IC bas / IC haut (95 % approximatif)
+    """
+    close = ensure_series(close).dropna().sort_index()
+    n = len(close)
+    if n < 5:
+        raise ValueError("Pas assez de données pour entraîner le modèle (min 5 points).")
+
+    # Variable temps : 0, 1, ..., n-1
+    t = np.arange(n)
+    A = np.vstack([t, np.ones(n)]).T  # matrice [t, 1]
+
+    # Moindres carrés : y ≈ m * t + c
+    m, c = np.linalg.lstsq(A, close.values, rcond=None)[0]
+
+    # Prédictions sur l'historique pour estimer la variance des résidus
+    preds_train = m * t + c
+    residuals = close.values - preds_train
+    sigma = residuals.std(ddof=1)
+
+    # Temps futurs : n, ..., n + horizon - 1
+    t_future = np.arange(n, n + horizon)
+    preds_future = m * t_future + c
+
+    # Choix de la fréquence calendrier pour les dates futures
+    if freq_label == "Quotidienne":
+        freq = "D"
+    elif freq_label == "Hebdomadaire":
+        freq = "W"
+    else:
+        freq = "M"
+
+    start_date = close.index[-1] + pd.tseries.frequencies.to_offset(freq)
+    future_index = pd.date_range(start=start_date, periods=horizon, freq=freq)
+
+    forecast = pd.Series(preds_future, index=future_index, name="Prévision")
+    lower = (forecast - 1.96 * sigma).rename("IC bas (95%)")
+    upper = (forecast + 1.96 * sigma).rename("IC haut (95%)")
+
+    hist = close.rename("Prix historique")
+
+    hist_df = pd.DataFrame({"Prix historique": hist})
+    forecast_df = pd.DataFrame(
+        {
+            "Prévision": forecast,
+            "IC bas (95%)": lower,
+            "IC haut (95%)": upper,
+        }
+    )
+
+    combined = pd.concat([hist_df, forecast_df], axis=1)
+    return combined
+
+
 # ---------- Interface Streamlit ----------
 
 st.title("Multi-Asset Portfolio Dashboard")
@@ -123,7 +186,8 @@ st.subheader("Module Quant A - Single Asset")
 
 st.write(
     "Analyse d'un seul actif avec deux stratégies : "
-    "Buy & Hold et croisement de moyennes mobiles."
+    "Buy & Hold et croisement de moyennes mobiles, "
+    "avec un bonus de **modèle prédictif simple**."
 )
 
 # --- Contrôles utilisateur ---
@@ -228,7 +292,6 @@ else:
             strategy_options,
         )
 
-        # On construit main_df à partir d'une Series (pas d'un scalaire)
         main_df = price_norm.to_frame(name="Prix normalisé")
 
         if selected_strategy == "Buy & Hold":
@@ -374,6 +437,34 @@ else:
             st.write("#### Tableau récapitulatif des métriques")
             st.dataframe(summary_df.round(2), width="stretch")
 
+        # -------- Bonus : modèle prédictif --------
+        with st.expander("Bonus : Modèle prédictif (régression linéaire sur le temps)"):
+            show_forecast = st.checkbox(
+                "Afficher la prévision sur l'horizon choisi",
+                value=False,
+                key="show_forecast",
+            )
+
+            if show_forecast:
+                horizon = st.slider(
+                    "Horizon de prévision (nombre de périodes)",
+                    min_value=5,
+                    max_value=60,
+                    value=20,
+                )
+                try:
+                    forecast_df = forecast_linear_trend(
+                        close, horizon=horizon, freq_label=freq_label
+                    )
+                    st.line_chart(forecast_df, width="stretch")
+                    st.caption(
+                        "Prévision basée sur une régression linéaire des prix "
+                        "en fonction du temps, avec intervalle de confiance "
+                        "95 % approximatif."
+                    )
+                except Exception as e:
+                    st.error(f"Erreur lors du calcul des prévisions : {e}")
+
         # -------- Explications texte --------
         with st.expander("Explications sur les stratégies"):
             st.markdown(
@@ -392,6 +483,11 @@ else:
 - Cette stratégie cherche à :
   - **capturer les tendances** haussières,
   - tout en réduisant l'exposition pendant les phases baissières.
+
+### Modèle prédictif (bonus)
+- On ajuste une **tendance linéaire** du prix en fonction du temps.
+- On extrapole cette tendance sur l'horizon de prévision choisi.
+- L'intervalle de confiance à 95 % est estimé à partir de la dispersion des résidus.
                 """
             )
 
