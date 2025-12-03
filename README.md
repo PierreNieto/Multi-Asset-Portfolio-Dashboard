@@ -1,106 +1,109 @@
-# Multi-Asset-Portfolio-Dashboard
+MULTI-ASSET PORTFOLIO DASHBOARD  
+ESILV Project — Python, Git & Linux for Finance  
+(Full project: Single Asset + Multi-Asset)
 
-Small Streamlit app for playing with financial time series.
+This project was developed as part of the Python, Git & Linux for Finance course.
+The objective is to build an interactive financial platform capable of:
 
-The project is split in two parts:
+- retrieving real-time financial data
+- displaying interactive dashboards
+- running quantitative trading strategies
+- simulating a multi-asset portfolio
+- generating automated daily reports
+- running 24/7 on a Linux virtual machine
 
-- **Quant A – Single Asset module (my part)**
-- **Quant B – Portfolio module** (handled by my teammate)
+The project is carried out in pairs, with two distinct modules:
+- Quant A — Single Asset Analysis
+- Quant B — Multi-Asset Portfolio Analysis
 
-For now, this README mainly documents **Quant A**, since this is the part I implemented.
+Both modules are integrated into a single Streamlit application.
 
----
+--------------------------------------------------------------------
 
-## 1. Quant A – Single Asset FX Module
+1) SINGLE ASSET ANALYSIS MODULE (Quant A)  
+Folder: /app/single_asset/
 
-**Main asset studied:** `EURUSD=X` (EUR/USD FX rate on Yahoo Finance).
+Features:
+- Analysis of a single asset (AAPL, CAC40, EUR/USD…)
+- Dynamic price retrieval (API, yfinance, web scraping)
+- Backtesting of at least two strategies
+- Metrics: Sharpe ratio, Max Drawdown, Annualized Volatility, Cumulative Returns
+- Interactive charts: asset price + strategy performance
+- Adjustable parameters in the UI
+- Bonus: predictive model (ARIMA, Regression, ML)
 
-The idea is to focus on **one asset at a time** and compare simple trading rules.
+--------------------------------------------------------------------
 
-In the app, the user can:
+2) MULTI-ASSET PORTFOLIO MODULE (Quant B)  
+Folder: /app/portfolio/
 
-- choose a **ticker** (default: `EURUSD=X`),
-- pick a **date range**,
-- choose a **data frequency**: Daily / Weekly / Monthly,
-- set the parameters of a **Moving Average crossover** strategy,
-- compare it to a simple **Buy & Hold** strategy.
+Features:
+- Multi-asset data loading (at least 3 assets) via yfinance or API
+- Daily returns calculation
+- Portfolio construction:
+  * Equal-weight
+  * Custom weights
+  * Simple rebalancing
+- Performance metrics:
+  * Cumulative return
+  * Annualized volatility
+  * Sharpe ratio
+  * Correlation matrix
+- Interactive visualizations:
+  * Individual asset prices
+  * Portfolio cumulative value
+  * Asset vs. portfolio comparison
+  * Plotly interactive charts
 
-The main page shows:
+--------------------------------------------------------------------
 
-- the raw price of the asset,
-- a chart with **normalized price vs strategy equity**,
-- a second chart with **equity curves** only (one line = one strategy).
+STREAMLIT APPLICATION
 
----
+The final dashboard includes:
+- A sidebar navigation menu
+- A Single Asset page
+- A Multi-Asset Portfolio page
+- Automatic data refresh every 5 minutes
+- Robust error handling for API failures
 
-## 2. Strategies
+Local execution:
+streamlit run app/main.py
 
-### Buy & Hold (benchmark)
+--------------------------------------------------------------------
 
-- Buy the asset at the beginning of the period,
-- keep the position until the end,
-- the equity curve is just the price normalized by its initial value.
+LINUX DEPLOYMENT & CRON AUTOMATION
 
-This serves as a very simple **benchmark**.
+The project must be deployed on a Linux machine with:
+- A Streamlit app running 24/7
+- Automatic data updates
+- A daily report (generated via cron at 20:00)
+- Reports stored in /reports/
+- Cron script included in the repository
 
-### Moving Average Crossover (trend following)
+--------------------------------------------------------------------
 
-- We compute two moving averages on the closing price:
-  - a **short** moving average (more reactive),
-  - a **long** moving average (smoother).
-- When `MA_short > MA_long` → we are **in the market** (position = 1).
-- When `MA_short <= MA_long` → we are **out of the market** (position = 0).
+TECHNOLOGIES USED
 
-The short and long windows are controlled by sliders in the sidebar and are
-adapted to the chosen frequency (Daily / Weekly / Monthly).
+- Python 3.9  
+- Streamlit  
+- Pandas / NumPy  
+- Plotly  
+- SciPy  
+- yfinance  
+- Git / GitHub  
+- Linux (VM, cron)
 
----
+--------------------------------------------------------------------
 
-## 3. Performance metrics
+AUTHORS
 
-For each strategy, the app computes and displays:
+Lou-anne Peillon — Single Asset Module (Quant A)
+Pierre Nieto — Multi-Asset Portfolio Module (Quant B)
 
-- **Total return** – overall gain over the whole period.
-- **Annualized return** – average yearly growth (assuming 252 trading days).
-- **Annualized volatility** – yearly standard deviation of returns (risk).
-- **Sharpe ratio** – risk-adjusted performance (return / risk, rf = 0).
-- **Max drawdown** – worst peak-to-trough loss.
+--------------------------------------------------------------------
 
-A short text summary tells which strategy has:
+FINAL OBJECTIVE
 
-- the **highest Sharpe ratio**, and
-- the **highest total return** for the selected period.
-
-A small table with all metrics side by side is also shown.
-
----
-
-## 4. Bonus: Simple prediction model
-
-As an optional bonus, Quant A also includes a tiny prediction feature:
-
-- we fit a **linear regression** of price vs time (straight line),
-- we extend this trend into the future over a user-chosen horizon (5–60 periods),
-- we build a rough **95% confidence band** based on past residuals.
-
-The chart displays:
-
-- historical prices,
-- the forecast line,
-- the confidence interval.
-
-This model is **very basic** and is only here to illustrate how to connect
-time series data with a simple prediction method.  
-It is **not** meant to be used for real trading.
-
----
-
-## 5. How to run the app locally (Quant A)
-
-### 5.1. Create and activate the environment
-
-Using conda:
-
-```bash
-conda create -n quantproj python=3.11
-conda activate quantproj
+A robust, professional, interactive financial application deployed on Linux
+and running 24/7, capable of analyzing both a single asset and a complete
+multi-asset portfolio.
