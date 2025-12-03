@@ -9,29 +9,131 @@ The goal of this multi-asset portfolio is to analyze the correlation between mac
 * The impact of energy prices (Brent) on financial markets
 * Portfolio effects such as volatility, correlation, and cumulative performance
 
-Selected Assets and Justification:
+This module is developed in parallel with the Single-Asset Analysis Module (Quant A) and merges into a unified interactive dashboard.
 
-AAPL – Apple (US Tech)
-Represents the US technology sector. Highly sensitive to interest rate movements, making it ideal for studying rate–equity interactions and the behavior of growth stocks under macroeconomic stress.
+2. Data Universe
 
-SPY – S&P 500 ETF
-The benchmark index for the US stock market. Provides a broad representation of market risk and is essential for comparing asset behavior, understanding global equity sentiment, and observing systemic risk.
+The portfolio covers a wide range of asset classes to capture the influence of interest rates, inflation, commodities, equity sectors, cryptoassets, and international markets.
 
-ACA.PA – Crédit Agricole (Europe Finance)
-A major European bank. Banks are strongly influenced by interest rates, credit conditions, and economic cycles. This asset helps analyze European financial risk and compare EU vs US market behavior.
+2.1. US Equities / ETFs
 
-AIR.PA – Airbus (Europe Industrial)
-A cyclical industrial company. Highly sensitive to global demand, economic conditions, and energy prices. Useful for comparing industrial cyclicality with technology and financial sectors.
+Ticker	Name	Market / Currency	Source
 
-BZ=F – Brent Crude Oil
-The global benchmark for oil prices. Important for understanding inflation pressures, energy shocks, and their effects on both equities and interest rates.
+AAPL	Apple Inc.	Nasdaq / USD	Yahoo Finance
+MSFT	Microsoft	Nasdaq / USD	Yahoo Finance
+NVDA	NVIDIA Corp.	Nasdaq / USD	Yahoo Finance
+AMZN	Amazon	Nasdaq / USD	Yahoo Finance
+GOOGL	Alphabet A	Nasdaq / USD	Yahoo Finance
+META	Meta Platforms	Nasdaq / USD	Yahoo Finance
+TSLA	Tesla	Nasdaq / USD	Yahoo Finance
+LLY	Eli Lilly	NYSE / USD	Yahoo Finance
+BRK-B	Berkshire Hathaway B	NYSE / USD	Yahoo Finance
+JPM	JPMorgan Chase	NYSE / USD	Yahoo Finance
+V	Visa Inc.	NYSE / USD	Yahoo Finance
+SPY	S&P 500 ETF	NYSE Arca / USD	Yahoo Finance
 
-^TNX – US 10Y Bond Yield
-The most monitored global macroeconomic indicator. Represents risk-free rates, monetary policy expectations, and inflation expectations. Critical for analyzing interest-rate-driven movements across all asset classes.
+These assets allow the analysis of the US equity market, sector rotation (technology, financials, consumer, healthcare), and benchmark comparison against a broad index.
 
-GC=F – Gold
-A traditional safe-haven asset. Typically negatively correlated with equities during stress periods. Useful for identifying hedging behavior and studying risk-off market regimes.
+2.2. European Equities
 
-BTC-USD – Bitcoin
-A non-traditional digital asset. Sometimes correlated with equities, sometimes fully decorrelated. Adds an alternative asset class and provides insight into speculative risk and modern portfolio diversification.
+MC.PA	LVMH	Paris / EUR	Yahoo Finance
+OR.PA	L'Oréal	Paris / EUR	Yahoo Finance
+TTE.PA	TotalEnergies	Paris / EUR	Yahoo Finance
+ACA.PA	Crédit Agricole	Paris / EUR	Yahoo Finance
+AIR.PA	Airbus	Paris / EUR	Yahoo Finance
+SAN.PA	Sanofi	Paris / EUR	Yahoo Finance
+ASML.AS	ASML Holding	Amsterdam / EUR	Yahoo Finance
+ADYEN.AS	Adyen NV	Amsterdam / EUR	Yahoo Finance
+
+This selection provides diversified exposure to European luxury, energy, banking, industrials, pharmaceuticals, and technology.
+
+2.3. Asia / China Equities
+
+0700.HK	Tencent	HKEX / HKD	Yahoo Finance
+9988.HK	Alibaba	HKEX / HKD	Yahoo Finance
+600519.SS	Kweichow Moutai	Shanghai / CNY	Yahoo Finance
+
+These equities enable cross-regional comparisons between Western and Asian markets.
+
+2.4. Cryptoassets
+
+BTC-USD	Bitcoin	USD	Yahoo / Crypto API
+ETH-USD	Ethereum	USD	Yahoo / Crypto API
+
+Cryptoassets bring a non-traditional, high-volatility component relevant for modern diversification studies.
+
+2.5. Commodities
+
+GC=F	Gold Futures	USD/oz	Yahoo Finance
+BZ=F	Brent Crude Oil	USD/bbl	Yahoo Finance
+
+These commodities allow the study of inflation pressure, geopolitical risks, and their transmission to equity markets.
+
+2.6. Sovereign Yields & Macroeconomic Indicators
+
+^TNX	U.S. 10Y Treasury Yield	%	Yahoo Finance
+US_10Y_Real	U.S. 10Y Real Yield	%	FRED
+US_CPI	U.S. CPI (Inflation)	%	FRED / BLS
+FR10Y	France 10Y Sovereign Yield	%	FRED / ECB
+DE10Y	Germany 10Y Bund Yield	%	FRED / ECB
+IT10Y	Italy 10Y BTP Yield	%	FRED / ECB
+BR10Y	Brazil 10Y Yield	%	TradingEconomics
+
+Including interest-rate and inflation data enables the analysis of macro-financial relationships such as rates versus equities, sovereign risk, and real yield dynamics.
+
+3. Methodology and Features
+
+3.1. Data Retrieval
+
+Automated fetching of market data from Yahoo Finance, FRED, ECB, TradingEconomics, and crypto APIs.
+Data is aligned and cleaned using forward/backward filling.
+Time series update automatically within the dashboard with a five-minute refresh cycle, in accordance with project requirements .
+
+3.2. Portfolio Construction
+
+Equal-weight portfolios
+User-defined weight inputs
+Dynamic rebalancing (daily, weekly, monthly)
+3.3. Risk and Performance Metrics
+The platform computes:
+Correlation matrix
+Annualized volatility
+Annualized return
+Maximum drawdown
+Sharpe ratio
+Rolling volatility and rolling correlations
+
+3.4. Visualization 
+
+The dashboard includes:
+
+Comparative price charts for all assets
+Portfolio cumulative performance chart
+Correlation heatmaps
+Contribution-to-risk and sector/region breakdowns
+Comparisons between the portfolio and benchmark indices (e.g., SPY)
+
+3.5. Integration with the Overall Project
+
+This module integrates with:
+
+The single-asset analysis module (Quant A)
+The automated cron-generated daily report
+The Linux-hosted Streamlit application
+
+GitHub structure and collaboration follow the workflow required in the project specification, including pull requests, branch separation, and commit documentation
+
+4. Purpose and Analytical Framework
+
+The chosen asset universe enables the study of several key economic and financial mechanisms:
+
+Interaction between interest rates, inflation, and equity valuations
+Comparison between US, European, and Asian markets
+Impact of commodity and energy prices on sectoral performance
+Behaviour of defensive vs. cyclical sectors
+Portfolio diversification and cross-asset correlations
+Contribution of alternative assets such as crypto to risk and return
+Sovereign yield curve pressures and international risk transmission
+
+The module provides a quantitative environment to examine how macroeconomic conditions influence global financial markets.
 
