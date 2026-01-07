@@ -16,13 +16,17 @@ st.set_page_config(
 )
 
 st.sidebar.title("Navigation")
+
+menu_options = ["Multi-Asset Portfolio (Quant B)", "Single Asset (Quant A)"]
+
 page = st.sidebar.selectbox(
     "Choose a module",
-    ["Single Asset (Quant A)", "Multi-Asset Portfolio (Quant B)"]
+    menu_options,
+    index=0
 )
 
-if page == "Single Asset (Quant A)":
-    run_single_asset_page()
-
-elif page == "Multi-Asset Portfolio (Quant B)":
+if page == "Multi-Asset Portfolio (Quant B)":
     run_portfolio_page()
+
+elif page == "Single Asset (Quant A)":
+    run_single_asset_page()
