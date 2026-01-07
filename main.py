@@ -3,7 +3,6 @@
 
 import streamlit as st
 
-# Import des modules
 from app.single_asset.single_asset_page import run_single_asset_page
 from app.portfolio.portfolio_page import run_portfolio_page
 
