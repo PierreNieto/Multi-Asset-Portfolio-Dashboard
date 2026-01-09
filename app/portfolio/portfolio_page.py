@@ -1077,7 +1077,7 @@ def run_portfolio_page():
 
         <tr class="category-row"><td colspan="4">European Equities</td></tr>
         <tr><td>MC.PA</td><td>LVMH</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-        <tr><td>OR.PA</td><td>L'Oreal</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>OR.PA</td><td>L Oreal</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
         <tr><td>TTE.PA</td><td>TotalEnergies</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
         <tr><td>ACA.PA</td><td>Crédit Agricole</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
         <tr><td>AIR.PA</td><td>Airbus</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
@@ -1118,7 +1118,9 @@ def run_portfolio_page():
         <hr>
 
 
-        """)
+        """,
+        unsafe_allow_html=True 
+    )
     st.markdown(
         """
         <div style="font-size:11px; color:#999; text-align:right; margin-top:10px;">
