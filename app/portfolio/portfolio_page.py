@@ -1124,7 +1124,7 @@ def run_portfolio_page():
     st.markdown(
         """
         <div style="font-size:11px; color:#999; text-align:right; margin-top:10px;">
-        AUTHORS: Pierre Nieto — Multi-Asset Portfolio Module
+        AUTHOR: Pierre Nieto — Multi-Asset Portfolio Module
         </div>
         """, 
         unsafe_allow_html=True
