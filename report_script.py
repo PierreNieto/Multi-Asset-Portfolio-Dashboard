@@ -11,13 +11,25 @@ REPORT_DIR = os.path.join(BASE_DIR, "reports")
 
 # Assets selected from your dashboard files
 SINGLE_ASSET_TICKER = "EURUSD=X" 
-PORTFOLIO_TICKERS = ["AAPL", "GOOGL", "NVDA", "SPY", "GC=F", "BTC-USD"]
+PORTFOLIO_TICKERS = ["AAPL", "GOOGL", "NVDA","^IXIC", "^GSPC", "^STOXX50E", "SPY", "GC=F", "BTC-USD"]
 
 def fetch_market_data(tickers, days=30):
-    """Fetch historical data for analysis."""
+    """Fetch historical data with robust error handling."""
     try:
+        
         data = yf.download(tickers, start=dt.date.today() - dt.timedelta(days=days), progress=False)
-        return data['Close']
+        
+        if data.empty:
+            return pd.DataFrame()
+            
+        if 'Close' in data.columns:
+            prices = data['Close']
+            if isinstance(prices, pd.Series):
+                prices = prices.to_frame(name=tickers[0])
+            # del empty lines : week-ends
+            prices = prices.ffill().dropna()
+            return prices
+        return pd.DataFrame()
     except Exception as e:
         print(f"Error fetching data: {e}")
         return pd.DataFrame()
@@ -70,7 +82,6 @@ def generate_report():
     
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("="*75 + "\n")
-        f.write(f"{'QUANT-B FINANCIAL INTELLIGENCE UNIT':^75}\n")
         f.write(f"{'DAILY MULTI-ASSET PERFORMANCE REPORT':^75}\n")
         f.write("="*75 + "\n")
         f.write(f"Generated on : {timestamp}\n")
