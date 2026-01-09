@@ -70,7 +70,7 @@ from app.portfolio.macro_loader import load_macro_data
 
 def run_portfolio_page():
     
-    st.write("Last refresh:", dt.datetime.now())
+    st.write("Last refresh (UTC):", dt.datetime.now())
 
     # -------------------------------------------------
     # Predefined baskets of assets
@@ -239,7 +239,7 @@ def run_portfolio_page():
     st.title("Multi-Asset Portfolio Dashboard")
     st.caption(
         "Quant B — Multi-Asset Portfolio Module: "
-        "risk–return analysis across equities, rates, commodities and crypto."
+        "risk return analysis across equities, rates, commodities and crypto."
     )
     st_autorefresh(interval=300000, key="portfolio_refresh_5min")
     # -----------------------------
@@ -270,9 +270,11 @@ def run_portfolio_page():
         default=default_selection,
     )
 
+    one_year_ago = dt.date.today() - dt.timedelta(days=365)
+
     start_date = st.sidebar.date_input(
         "Start date",
-        value=dt.date(2015, 1, 1),
+        value=one_year_ago,
         min_value=dt.date(2000, 1, 1),
         max_value=dt.date.today(),
     )
@@ -1028,94 +1030,101 @@ def run_portfolio_page():
     # FOOTER — Glossary 
     # -----------------------------
     st.markdown("---")
+    with st.expander("View Available Assets & Glossary"):
+        st.markdown(
+        """
+        <hr>
+        <div style="font-size:12px; line-height:1.35; color:#555;">
+
+        <u><strong>Assets available in this dashboard</strong></u><br><br>
+
+        <style>
+        .table-assets {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 12px;
+        }
+        .table-assets th, .table-assets td {
+        border-bottom: 1px solid #ddd;
+        padding: 4px 6px;
+        text-align: left;
+        }
+        .table-assets th {
+        color: #222;
+        }
+        .category-row {
+        background-color: #f6f6f6;
+        font-weight: bold;
+        }
+        </style>
+
+        <table class="table-assets">
+
+        <tr class="category-row"><td colspan="4">US Equities / ETFs</td></tr>
+        <tr><th>Ticker</th><th>Name</th><th>Market / CCY</th><th>Source</th></tr>
+        <tr><td>AAPL</td><td>Apple Inc.</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>MSFT</td><td>Microsoft</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>NVDA</td><td>NVIDIA Corp.</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>AMZN</td><td>Amazon</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>GOOGL</td><td>Alphabet A</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>META</td><td>Meta</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>TSLA</td><td>Tesla</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>LLY</td><td>Eli Lilly</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>BRK-B</td><td>Berkshire Hathaway B</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>JPM</td><td>JPMorgan Chase</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>V</td><td>Visa Inc.</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
+        <tr><td>SPY</td><td>S&P 500 ETF</td><td>USD</td><td>Yahoo Finance</td></tr>
+
+        <tr class="category-row"><td colspan="4">European Equities</td></tr>
+        <tr><td>MC.PA</td><td>LVMH</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>OR.PA</td><td>L'Oreal</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>TTE.PA</td><td>TotalEnergies</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>ACA.PA</td><td>Crédit Agricole</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>AIR.PA</td><td>Airbus</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>SAN.PA</td><td>Sanofi</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>ASML.AS</td><td>ASML Holding</td><td>Amsterdam / EUR</td><td>Yahoo Finance</td></tr>
+        <tr><td>ADYEN.AS</td><td>Adyen NV</td><td>Amsterdam / EUR</td><td>Yahoo Finance</td></tr>
+
+        <tr class="category-row"><td colspan="4">Asia / China Equities</td></tr>
+        <tr><td>0700.HK</td><td>Tencent</td><td>HKEX / HKD</td><td>Yahoo Finance</td></tr>
+        <tr><td>9988.HK</td><td>Alibaba</td><td>HKEX / HKD</td><td>Yahoo Finance</td></tr>
+        <tr><td>600519.SS</td><td>Kweichow Moutai</td><td>Shanghai / CNY</td><td>Yahoo Finance</td></tr>
+
+        <tr class="category-row"><td colspan="4">Cryptoassets</td></tr>
+        <tr><td>BTC-USD</td><td>Bitcoin</td><td>USD</td><td>Yahoo / Crypto API</td></tr>
+        <tr><td>ETH-USD</td><td>Ethereum</td><td>USD</td><td>Yahoo / Crypto API</td></tr>
+
+        <tr class="category-row"><td colspan="4">Commodities</td></tr>
+        <tr><td>GC=F</td><td>Gold Futures</td><td>USD/oz</td><td>Yahoo Finance</td></tr>
+        <tr><td>BZ=F</td><td>Brent Crude Oil</td><td>USD/bbl</td><td>Yahoo Finance</td></tr>
+
+        <tr class="category-row"><td colspan="4">Sovereign Yields & Macro Indicators</td></tr>
+        <tr><td>^TNX</td><td>U.S. 10Y Treasury Yield</td><td>%</td><td>Yahoo Finance</td></tr>
+        <tr><td>US_10Y_Real</td><td>U.S. 10Y Real Yield</td><td>%</td><td>FRED</td></tr>
+        <tr><td>US_CPI</td><td>U.S. CPI (Inflation)</td><td>%</td><td>FRED / BLS</td></tr>
+        <tr><td>FR10Y</td><td>France 10Y Sovereign Yield</td><td>%</td><td>FRED / ECB</td></tr>
+        <tr><td>DE10Y</td><td>Germany 10Y Bund Yield</td><td>%</td><td>FRED / ECB</td></tr>
+        <tr><td>IT10Y</td><td>Italy 10Y BTP Yield</td><td>%</td><td>FRED / ECB</td></tr>
+        <tr><td>BR10Y</td><td>Brazil 10Y Yield</td><td>%</td><td>TradingEconomics</td></tr>
+
+        </table>
+
+        <br>
+        <span style="font-size:11px; color:#888;">
+        *Data refresh: 5 minutes (Yahoo), 15 minutes (FRED), daily (Macro indicators).*
+        </span>
+
+        </div>
+        <hr>
+
+
+        """)
     st.markdown(
-    """
-    <hr>
-    <div style="font-size:12px; line-height:1.35; color:#555;">
-
-    <u><strong>Assets available in this dashboard</strong></u><br><br>
-
-    <style>
-    .table-assets {
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 12px;
-    }
-    .table-assets th, .table-assets td {
-    border-bottom: 1px solid #ddd;
-    padding: 4px 6px;
-    text-align: left;
-    }
-    .table-assets th {
-    color: #222;
-    }
-    .category-row {
-    background-color: #f6f6f6;
-    font-weight: bold;
-    }
-    </style>
-
-    <table class="table-assets">
-
-    <tr class="category-row"><td colspan="4">US Equities / ETFs</td></tr>
-    <tr><th>Ticker</th><th>Name</th><th>Market / CCY</th><th>Source</th></tr>
-    <tr><td>AAPL</td><td>Apple Inc.</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>MSFT</td><td>Microsoft</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>NVDA</td><td>NVIDIA Corp.</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>AMZN</td><td>Amazon</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>GOOGL</td><td>Alphabet A</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>META</td><td>Meta</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>TSLA</td><td>Tesla</td><td>Nasdaq / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>LLY</td><td>Eli Lilly</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>BRK-B</td><td>Berkshire Hathaway B</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>JPM</td><td>JPMorgan Chase</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>V</td><td>Visa Inc.</td><td>NYSE / USD</td><td>Yahoo Finance</td></tr>
-    <tr><td>SPY</td><td>S&P 500 ETF</td><td>USD</td><td>Yahoo Finance</td></tr>
-
-    <tr class="category-row"><td colspan="4">European Equities</td></tr>
-    <tr><td>MC.PA</td><td>LVMH</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>OR.PA</td><td>L'Oréal</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>TTE.PA</td><td>TotalEnergies</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>ACA.PA</td><td>Crédit Agricole</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>AIR.PA</td><td>Airbus</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>SAN.PA</td><td>Sanofi</td><td>Paris / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>ASML.AS</td><td>ASML Holding</td><td>Amsterdam / EUR</td><td>Yahoo Finance</td></tr>
-    <tr><td>ADYEN.AS</td><td>Adyen NV</td><td>Amsterdam / EUR</td><td>Yahoo Finance</td></tr>
-
-    <tr class="category-row"><td colspan="4">Asia / China Equities</td></tr>
-    <tr><td>0700.HK</td><td>Tencent</td><td>HKEX / HKD</td><td>Yahoo Finance</td></tr>
-    <tr><td>9988.HK</td><td>Alibaba</td><td>HKEX / HKD</td><td>Yahoo Finance</td></tr>
-    <tr><td>600519.SS</td><td>Kweichow Moutai</td><td>Shanghai / CNY</td><td>Yahoo Finance</td></tr>
-
-    <tr class="category-row"><td colspan="4">Cryptoassets</td></tr>
-    <tr><td>BTC-USD</td><td>Bitcoin</td><td>USD</td><td>Yahoo / Crypto API</td></tr>
-    <tr><td>ETH-USD</td><td>Ethereum</td><td>USD</td><td>Yahoo / Crypto API</td></tr>
-
-    <tr class="category-row"><td colspan="4">Commodities</td></tr>
-    <tr><td>GC=F</td><td>Gold Futures</td><td>USD/oz</td><td>Yahoo Finance</td></tr>
-    <tr><td>BZ=F</td><td>Brent Crude Oil</td><td>USD/bbl</td><td>Yahoo Finance</td></tr>
-
-    <tr class="category-row"><td colspan="4">Sovereign Yields & Macro Indicators</td></tr>
-    <tr><td>^TNX</td><td>U.S. 10Y Treasury Yield</td><td>%</td><td>Yahoo Finance</td></tr>
-    <tr><td>US_10Y_Real</td><td>U.S. 10Y Real Yield</td><td>%</td><td>FRED</td></tr>
-    <tr><td>US_CPI</td><td>U.S. CPI (Inflation)</td><td>%</td><td>FRED / BLS</td></tr>
-    <tr><td>FR10Y</td><td>France 10Y Sovereign Yield</td><td>%</td><td>FRED / ECB</td></tr>
-    <tr><td>DE10Y</td><td>Germany 10Y Bund Yield</td><td>%</td><td>FRED / ECB</td></tr>
-    <tr><td>IT10Y</td><td>Italy 10Y BTP Yield</td><td>%</td><td>FRED / ECB</td></tr>
-    <tr><td>BR10Y</td><td>Brazil 10Y Yield</td><td>%</td><td>TradingEconomics</td></tr>
-
-    </table>
-
-    <br>
-    <span style="font-size:11px; color:#888;">
-    *Data refresh: 5 minutes (Yahoo), 15 minutes (FRED), daily (Macro indicators).*
-    </span>
-
-    </div>
-    <hr>
-
-
-    """,
+        """
+        <div style="font-size:11px; color:#999; text-align:right; margin-top:10px;">
+        AUTHORS: Pierre Nieto — Multi-Asset Portfolio Module
+        </div>
+        """, 
         unsafe_allow_html=True
     )
 

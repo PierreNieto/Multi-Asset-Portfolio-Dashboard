@@ -365,3 +365,12 @@ def run_single_asset_page():
             # -------- Raw data preview --------
             st.write("### Raw data (last rows)")
             st.dataframe(data.tail(), width="stretch")
+
+    st.markdown(
+        """
+        <div style="font-size:11px; color:#999; text-align:right; margin-top:10px;">
+        Lou-anne Peillon — Single Asset Module
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )

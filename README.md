@@ -9,14 +9,16 @@ The objective is to build an interactive financial platform capable of:
 - displaying interactive dashboards
 - running quantitative trading strategies
 - simulating a multi-asset portfolio
-- generating automated daily reports
-- running 24/7 on a Linux virtual machine
+- generating automated daily reports 
+- running 24/7 on a Linux virtual machine (Oracle VM)
 
 The project is carried out in pairs, with two distinct modules:
 - Quant A — Single Asset Analysis
 - Quant B — Multi-Asset Portfolio Analysis
 
 Both modules are integrated into a single Streamlit application.
+
+URL : http://141.253.119.77:8501/
 
 --------------------------------------------------------------------
 
@@ -63,7 +65,7 @@ The final dashboard includes:
 - A sidebar navigation menu
 - A Single Asset page
 - A Multi-Asset Portfolio page
-- Automatic data refresh every 5 minutes
+- Automatic data refresh every 5 minutes (UTC)
 - Robust error handling for API failures
 
 Local execution:
@@ -89,9 +91,13 @@ TECHNOLOGIES USED
 - Pandas / NumPy  
 - Plotly  
 - SciPy  
-- yfinance  
+- yfinance
+- altair 
+- jinja2
+- streamlit-autorefresh 
+- pandas-datareader   
 - Git / GitHub  
-- Linux (VM, cron)
+- Linux (VM Oracle, pm2, cron)
 
 --------------------------------------------------------------------
 
